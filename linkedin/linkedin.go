@@ -21,6 +21,7 @@ type LinkedInProfile struct {
 	Name       string
 	Headline   string
 	Experience []*LinkedInExperience
+	Education  []*LinkedInEducation
 }
 
 type LinkedInPosition struct {
@@ -35,6 +36,10 @@ type LinkedInExperience struct {
 	Company      string
 	CompanyImage *string
 	Positions    []*LinkedInPosition
+}
+
+type LinkedInEducation struct {
+	Title string
 }
 
 func (r *LinkedIn) retrievePage() (*rod.Page, error) {
@@ -59,8 +64,12 @@ func (r *LinkedIn) getPage() *rod.Page {
 func (r *LinkedIn) RetrieveProfile() *LinkedInProfile {
 	name := r.getPage().MustElement(".top-card-layout h1.top-card-layout__title").MustText()
 	headline := r.getPage().MustElement(".top-card-layout h2.top-card-layout__headline").MustText()
-	expList := r.getPage().MustElements("ul.experience__list > li")
-	return &LinkedInProfile{Name: name, Headline: headline, Experience: MapElements(expList, ExtractExperience)}
+	return &LinkedInProfile{Name: name, Headline: headline, Experience: ExtractExperienceList(r.getPage()), Education: ExtractEducationList(r.getPage())}
+}
+
+func ExtractExperienceList(page *rod.Page) []*LinkedInExperience {
+	expList := page.MustElements("ul.experience__list > li")
+	return MapElements(expList, ExtractExperience)
 }
 
 func ExtractExperience(element *rod.Element) *LinkedInExperience {
@@ -75,6 +84,16 @@ func ExtractPosition(element *rod.Element) *LinkedInPosition {
 	metaElements := element.MustElements(".experience-item__meta-item")
 	desc := element.MustElement("p.show-more-less-text__text--more").MustText()
 	return &LinkedInPosition{Title: title, Description: desc, Location: metaElements[1].MustText()}
+}
+
+func ExtractEducationList(page *rod.Page) []*LinkedInEducation {
+	items := page.MustElements("ul.education__list > li")
+	return MapElements(items, ExtractEducation)
+}
+
+func ExtractEducation(element *rod.Element) *LinkedInEducation {
+	title := element.MustElement("h3 > a").MustText()
+	return &LinkedInEducation{Title: title}
 }
 
 func MapElements[V any](ts rod.Elements, fn func(*rod.Element) V) []V {

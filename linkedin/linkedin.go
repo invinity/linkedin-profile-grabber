@@ -2,6 +2,7 @@ package linkedin
 
 import (
 	"log"
+	"strings"
 	"time"
 
 	"github.com/go-rod/rod"
@@ -45,7 +46,7 @@ type LinkedInEducation struct {
 func (r *LinkedIn) retrievePage() (*rod.Page, error) {
 	page := r.browser.MustPage("https://linkedin.com/in/mattpitts")
 	waitDur, _ := time.ParseDuration("10s")
-	err := page.WaitDOMStable(waitDur, 0.9)
+	err := page.WaitDOMStable(waitDur, .2)
 	log.Println("Page Stable")
 	return page, err
 }
@@ -62,7 +63,12 @@ func (r *LinkedIn) getPage() *rod.Page {
 }
 
 func (r *LinkedIn) RetrieveProfile() *LinkedInProfile {
-	name := r.getPage().MustElement(".top-card-layout h1.top-card-layout__title").MustText()
+	nameElm, err := r.getPage().Element(".top-card-layout h1.top-card-layout__title")
+	if err != nil {
+		html := r.getPage().MustElement("body")
+		log.Fatal("Unable to get initial profile name element from DOM", html, err)
+	}
+	name := nameElm.MustText()
 	headline := r.getPage().MustElement(".top-card-layout h2.top-card-layout__headline").MustText()
 	return &LinkedInProfile{Name: name, Headline: headline, Experience: ExtractExperienceList(r.getPage()), Education: ExtractEducationList(r.getPage())}
 }
@@ -75,8 +81,17 @@ func ExtractExperienceList(page *rod.Page) []*LinkedInExperience {
 func ExtractExperience(element *rod.Element) *LinkedInExperience {
 	title := element.MustElement(".experience-item__subtitle").MustText()
 	companyImage := element.MustElement("img.profile-section-card__image").MustAttribute("src")
-	positionElements := element.MustElements("li")
-	return &LinkedInExperience{Company: title, CompanyImage: companyImage, Positions: MapElements(positionElements, ExtractPosition)}
+	return &LinkedInExperience{Company: title, CompanyImage: companyImage, Positions: ExtractPositions(element)}
+}
+
+func ExtractPositions(element *rod.Element) []*LinkedInPosition {
+	class, _ := element.Attribute("class")
+	isGroup := strings.Contains(*class, "experience-group")
+	if isGroup {
+		return MapElements(element.MustElements("li"), ExtractPosition)
+	} else {
+		return []*LinkedInPosition{ExtractPosition(element)}
+	}
 }
 
 func ExtractPosition(element *rod.Element) *LinkedInPosition {
@@ -96,7 +111,7 @@ func ExtractEducation(element *rod.Element) *LinkedInEducation {
 	return &LinkedInEducation{Title: title}
 }
 
-func MapElements[V any](ts rod.Elements, fn func(*rod.Element) V) []V {
+func MapElements[V any](ts []*rod.Element, fn func(*rod.Element) V) []V {
 	result := make([]V, len(ts))
 	for i, t := range ts {
 		result[i] = fn(t)

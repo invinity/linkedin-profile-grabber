@@ -97,7 +97,17 @@ func ExtractPositions(element *rod.Element) []*LinkedInPosition {
 func ExtractPosition(element *rod.Element) *LinkedInPosition {
 	title := element.MustElement(".experience-item__title").MustText()
 	metaElements := element.MustElements(".experience-item__meta-item")
-	desc := element.MustElement("p.show-more-less-text__text--more").MustText()
+	var desc string
+	moreText, err := element.Element("p.show-more-less-text__text--more")
+	if err != nil {
+		lessText, err := element.Element("p.show-more-less-text__text--less")
+		if err != nil {
+			log.Fatal("Unable to find description text element", err)
+		}
+		desc = lessText.MustText()
+	} else {
+		desc = moreText.MustText()
+	}
 	return &LinkedInPosition{Title: title, Description: desc, Location: metaElements[1].MustText()}
 }
 

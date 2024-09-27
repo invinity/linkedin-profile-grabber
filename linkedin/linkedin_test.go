@@ -9,7 +9,6 @@ import (
 
 	"github.com/go-rod/rod"
 	"github.com/go-rod/rod/lib/launcher"
-	"github.com/go-rod/rod/lib/proto"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
@@ -26,14 +25,16 @@ var _ = Describe("Using the LinkedIn profile retrieval", Ordered, func() {
 	BeforeAll(func() {
 		timeout, _ := time.ParseDuration("60s")
 		chromePath, present := os.LookupEnv("CHROME")
+		nosandbox := false
 		if present {
 			log.Println("Using chrome from ENV: ", chromePath)
+			nosandbox = true
 		}
-		browser = rod.New().ControlURL(launcher.New().Leakless(false).NoSandbox(true).Bin(chromePath).MustLaunch()).Trace(true).Timeout(timeout).MustConnect()
-		browser.EachEvent(func(e *proto.NetworkResponseReceived) {
-			log.Println(e)
-		})
-		linkedin = New(browser)
+		browser = rod.New().ControlURL(launcher.New().Leakless(false).NoSandbox(nosandbox).Bin(chromePath).MustLaunch()).Trace(true).Timeout(timeout)
+		// browser.EachEvent(func(e *proto.NetworkResponseReceived) {
+		// 	log.Println(e)
+		// })
+		linkedin = New(browser.MustConnect())
 		enc := json.NewEncoder(log.Writer())
 		enc.SetIndent("  ", "  ")
 		enc.Encode(linkedin.RetrieveProfile())

@@ -25,7 +25,10 @@ var _ = Describe("Using the LinkedIn profile retrieval", Ordered, func() {
 
 	BeforeAll(func() {
 		timeout, _ := time.ParseDuration("60s")
-		chromePath, _ := os.LookupEnv("CHROME")
+		chromePath, present := os.LookupEnv("CHROME")
+		if present {
+			log.Println("Using chrome from ENV: ", chromePath)
+		}
 		browser = rod.New().ControlURL(launcher.New().Leakless(false).NoSandbox(true).Bin(chromePath).MustLaunch()).Trace(true).Timeout(timeout).MustConnect()
 		browser.EachEvent(func(e *proto.NetworkResponseReceived) {
 			log.Println(e)

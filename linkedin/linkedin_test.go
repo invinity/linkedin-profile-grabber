@@ -3,6 +3,7 @@ package linkedin
 import (
 	"encoding/json"
 	"log"
+	"os"
 	"testing"
 	"time"
 
@@ -24,7 +25,8 @@ var _ = Describe("Using the LinkedIn profile retrieval", Ordered, func() {
 
 	BeforeAll(func() {
 		timeout, _ := time.ParseDuration("60s")
-		browser = rod.New().ControlURL(launcher.New().Leakless(false).NoSandbox(true).MustLaunch()).Trace(true).Timeout(timeout).MustConnect()
+		chromePath, _ := os.LookupEnv("CHROME")
+		browser = rod.New().ControlURL(launcher.New().Leakless(false).NoSandbox(true).Bin(chromePath).MustLaunch()).Trace(true).Timeout(timeout).MustConnect()
 		browser.EachEvent(func(e *proto.NetworkResponseReceived) {
 			log.Println(e)
 		})

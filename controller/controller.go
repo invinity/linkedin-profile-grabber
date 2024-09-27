@@ -4,14 +4,22 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/go-rod/rod"
 	"github.com/invinity/linkedin-profile-grabber/linkedin"
 )
 
-func GetLinkedInProfile(w http.ResponseWriter, r *http.Request) {
+type Controller struct {
+	linkedinInst *linkedin.LinkedIn
+}
+
+func New(browser *rod.Browser) *Controller {
+	return &Controller{linkedinInst: linkedin.New(browser)}
+}
+
+func (r *Controller) GetLinkedInProfile(w http.ResponseWriter, req *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 
-	linkedin := linkedin.New()
-	profile := linkedin.RetrieveProfile()
+	profile := r.linkedinInst.RetrieveProfile()
 
 	json.NewEncoder(w).Encode(profile)
 }

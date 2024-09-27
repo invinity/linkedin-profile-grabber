@@ -5,17 +5,21 @@ import (
 	"time"
 
 	"github.com/go-rod/rod"
-	"github.com/go-rod/rod/lib/launcher"
+	"github.com/kofalt/go-memoize"
 )
 
-func New() *LinkedIn {
-	return &LinkedIn{}
+func New(browser *rod.Browser) *LinkedIn {
+	return &LinkedIn{cache: memoize.NewMemoizer(5*time.Minute, 10*time.Minute), browser: browser}
 }
 
 type LinkedIn struct {
+	cache   *memoize.Memoizer
+	browser *rod.Browser
 }
 
 type LinkedInProfile struct {
+	Name       string
+	Headline   string
 	Experience []*LinkedInExperience
 }
 
@@ -28,40 +32,49 @@ type LinkedInPosition struct {
 }
 
 type LinkedInExperience struct {
-	Company   string
-	Positions []*LinkedInPosition
+	Company      string
+	CompanyImage *string
+	Positions    []*LinkedInPosition
+}
+
+func (r *LinkedIn) retrievePage() (*rod.Page, error) {
+	page := r.browser.MustPage("https://linkedin.com/in/mattpitts")
+	waitDur, _ := time.ParseDuration("10s")
+	err := page.WaitDOMStable(waitDur, 0.9)
+	log.Println("Page Stable")
+	return page, err
+}
+
+func (r *LinkedIn) getPage() *rod.Page {
+	result, err, cached := memoize.Call(r.cache, "page", r.retrievePage)
+	if err != nil {
+		log.Fatal(err)
+	}
+	if cached {
+		log.Println("Using cached Page")
+	}
+	return result
 }
 
 func (r *LinkedIn) RetrieveProfile() *LinkedInProfile {
-	// Launch a new browser with default options, and connect to it.
-	browser := rod.New().ControlURL(launcher.New().Leakless(false).MustLaunch()).Trace(true).MustConnect()
-
-	// Even you forget to close, rod will close it after main process ends.
-	defer browser.MustClose()
-
-	// Create a new page
-	log.Println("Retrieving https://linkedin.com/in/mattpitts")
-	page := browser.MustPage("https://linkedin.com/in/mattpitts")
-	waitDur, _ := time.ParseDuration("5s")
-	page.WaitDOMStable(waitDur, 0.7)
-	log.Println("Page Stable")
-	expList := page.MustElements("ul.experience__list > li")
-	log.Println("Got experience list")
-
-	return &LinkedInProfile{Experience: MapElements(expList, ExtractExperience)}
+	name := r.getPage().MustElement(".top-card-layout h1.top-card-layout__title").MustText()
+	headline := r.getPage().MustElement(".top-card-layout h2.top-card-layout__headline").MustText()
+	expList := r.getPage().MustElements("ul.experience__list > li")
+	return &LinkedInProfile{Name: name, Headline: headline, Experience: MapElements(expList, ExtractExperience)}
 }
 
 func ExtractExperience(element *rod.Element) *LinkedInExperience {
-	title := element.MustElement(".experience-item__title")
+	title := element.MustElement(".experience-item__subtitle").MustText()
+	companyImage := element.MustElement("img.profile-section-card__image").MustAttribute("src")
 	positionElements := element.MustElements("li")
-	return &LinkedInExperience{Company: title, Positions: MapElements(positionElements, ExtractPosition)}
+	return &LinkedInExperience{Company: title, CompanyImage: companyImage, Positions: MapElements(positionElements, ExtractPosition)}
 }
 
 func ExtractPosition(element *rod.Element) *LinkedInPosition {
 	title := element.MustElement(".experience-item__title").MustText()
 	metaElements := element.MustElements(".experience-item__meta-item")
 	desc := element.MustElement("p.show-more-less-text__text--more").MustText()
-	return &LinkedInPosition{Title: title, Description: desc, Location: metaElements[0].MustText()}
+	return &LinkedInPosition{Title: title, Description: desc, Location: metaElements[1].MustText()}
 }
 
 func MapElements[V any](ts rod.Elements, fn func(*rod.Element) V) []V {

@@ -25,10 +25,11 @@ jobs:
       with:
         go-version: '1.23'
 
+    - name: Set chrome path
+      run: echo "CHROME=${{ steps.setup-chrome.outputs.chrome-path }}" >> $GITHUB_ENV
+
     - name: Build
       run: go build -v ./...
 
     - name: Test
-      run: |
-        CHROME="${{ steps.setup-chrome.outputs.chrome-path }}"
-        go test -v ./...
+      run: go test -v ./...

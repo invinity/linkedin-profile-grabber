@@ -24,7 +24,7 @@ var _ = Describe("Using the LinkedIn profile retrieval", Ordered, func() {
 
 	BeforeAll(func() {
 		timeout, _ := time.ParseDuration("60s")
-		browser = rod.New().ControlURL(launcher.New().Leakless(false).MustLaunch()).Trace(true).Timeout(timeout).MustConnect()
+		browser = rod.New().ControlURL(launcher.New().Leakless(false).NoSandbox(true).MustLaunch()).Trace(true).Timeout(timeout).MustConnect()
 		browser.EachEvent(func(e *proto.NetworkResponseReceived) {
 			log.Println(e)
 		})

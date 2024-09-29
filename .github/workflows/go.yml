@@ -41,7 +41,7 @@ jobs:
       name: Setup GCloud Auth
       uses: 'google-github-actions/auth@v2'
       with:
-        workload_identity_provider: 'projects/76184862476/locations/global/workloadIdentityPools/my-pool/providers/my-provider'
+        workload_identity_provider: 'projects/76184862476/locations/global/workloadIdentityPools/main-pool/providers/main-provider'
         service_account: '76184862476-compute@developer.gserviceaccount.com'
 
     - name: 'Set up GCloud SDK'

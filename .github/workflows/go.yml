@@ -46,3 +46,10 @@ jobs:
 
     - name: 'Set up GCloud SDK'
       uses: 'google-github-actions/setup-gcloud@v2'
+
+    - id: 'deploy'
+      name: 'Deploy to GCloud'
+      uses: 'google-github-actions/deploy-cloudrun@v2'
+      with:
+        service: 'mattsite'
+        image: 'github.com/invinity/linkedin-profile-grabber'

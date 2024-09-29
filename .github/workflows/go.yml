@@ -33,3 +33,13 @@ jobs:
 
     - name: Test
       run: go test -v ./...
+
+    - id: 'glcoud-auth'
+      name: Setup GCloud Auth
+      uses: 'google-github-actions/auth@v2'
+      with:
+        workload_identity_provider: 'projects/76184862476/locations/global/workloadIdentityPools/my-pool/providers/my-provider'
+        service_account: '76184862476-compute@developer.gserviceaccount.com'
+
+    - name: 'Set up GCloud SDK'
+      uses: 'google-github-actions/setup-gcloud@v2'

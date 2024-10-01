@@ -1,7 +1,7 @@
 # Use the official Golang image to create a build artifact.
 # This is based on Debian and sets the GOPATH to /go.
 # https://hub.docker.com/_/golang
-FROM golang:1.23 as builder
+FROM golang:alpine as builder
 
 # Create and change to the app directory.
 WORKDIR /app
@@ -15,7 +15,7 @@ RUN go mod download
 COPY . ./
 
 # Install some C libs needed for this to execute
-RUN apt-get install -y libnss3
+RUN apk add chromium
 
 # Build the binary.
 # -mod=readonly ensures immutable go.mod and go.sum in container builds.

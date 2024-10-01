@@ -11,7 +11,8 @@ import (
 )
 
 func main() {
-	browser := rod.New().ControlURL(launcher.New().Leakless(false).MustLaunch()).Trace(true).MustConnect()
+	path, _ := launcher.LookPath()
+	browser := rod.New().ControlURL(launcher.New().Leakless(false).NoSandbox(true).Bin(path).MustLaunch()).Trace(true).MustConnect()
 	defer browser.MustClose()
 	router := routes.AppRoutes(browser)
 	http.Handle("/api", router)

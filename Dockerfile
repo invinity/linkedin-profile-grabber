@@ -24,10 +24,10 @@ RUN CGO_ENABLED=0 GOOS=linux go build -mod=readonly -v -o server
 
 # Build the runtime container image from scratch, copying what is needed from the previous stage.  
 # https://docs.docker.com/develop/develop-images/multistage-build/#use-multi-stage-builds
-FROM scratch
+# FROM scratch
 
 # Copy the binary to the production image from the builder stage.
-COPY --from=builder /app/server /server
+# COPY --from=builder /app/server /server
 
 # Run the web service on container startup.
-ENTRYPOINT ["/server"]
+ENTRYPOINT ["/app/server"]

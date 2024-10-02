@@ -27,8 +27,14 @@ var _ = Describe("Using the LinkedIn profile retrieval", Ordered, func() {
 		chromePath, present := os.LookupEnv("CHROME")
 		nosandbox := false
 		if present {
-			log.Println("Using chrome from ENV: ", chromePath)
 			nosandbox = true
+		} else {
+			chromePath, present = launcher.LookPath()
+		}
+		if present {
+			log.Println("Using chrome from ENV: ", chromePath)
+		} else {
+			log.Fatal("Unable to find path to chrome")
 		}
 		browser = rod.New().ControlURL(launcher.New().Leakless(false).NoSandbox(nosandbox).Bin(chromePath).MustLaunch()).Trace(true).Timeout(timeout)
 		// browser.EachEvent(func(e *proto.NetworkResponseReceived) {

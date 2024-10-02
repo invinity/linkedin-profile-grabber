@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/go-rod/rod"
 	"github.com/go-rod/rod/lib/launcher"
@@ -11,12 +12,13 @@ import (
 )
 
 func main() {
+	timeout, _ := time.ParseDuration("60s")
 	path, found := launcher.LookPath()
 	if !found {
 		log.Fatal("Did not find chrome in go-rod standard locations")
 	}
 	log.Printf("Using detected chrome path: %s\n", path)
-	browser := rod.New().ControlURL(launcher.New().Leakless(false).NoSandbox(true).Bin(path).MustLaunch()).Trace(true).MustConnect()
+	browser := rod.New().ControlURL(launcher.New().Leakless(false).NoSandbox(true).Bin(path).MustLaunch()).Timeout(timeout).Trace(true).MustConnect()
 	defer browser.MustClose()
 	router := routes.AppRoutes(browser)
 	http.Handle("/api", router)

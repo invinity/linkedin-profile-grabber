@@ -29,4 +29,5 @@ RUN CGO_ENABLED=0 GOOS=linux go build -mod=readonly -v -o server
 # COPY --from=builder /app/server /server
 
 # Run the web service on container startup.
+EXPOSE 8080/tcp
 ENTRYPOINT ["/app/server"]

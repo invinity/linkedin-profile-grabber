@@ -61,6 +61,12 @@ func (r *LinkedIn) RetrieveProfile() (*LinkedInProfile, error) {
 	if err != nil {
 		return nil, err
 	}
+	info, err := page.Info()
+	if err != nil {
+		return nil, err
+	}
+	title := info.Title
+	log.Println("Got page title: ", title)
 	_, err = page.Element("body")
 	if err != nil {
 		return nil, err

@@ -6,15 +6,14 @@ import (
 	"time"
 
 	"github.com/go-rod/rod"
-	"github.com/kofalt/go-memoize"
+	"github.com/go-rod/rod/lib/proto"
 )
 
 func New(browser *rod.Browser) *LinkedIn {
-	return &LinkedIn{cache: memoize.NewMemoizer(5*time.Minute, 10*time.Minute), browser: browser}
+	return &LinkedIn{browser: browser}
 }
 
 type LinkedIn struct {
-	cache   *memoize.Memoizer
 	browser *rod.Browser
 }
 
@@ -43,88 +42,182 @@ type LinkedInEducation struct {
 	Title string
 }
 
-func (r *LinkedIn) retrievePage() (*rod.Page, error) {
-	page := r.browser.MustPage("https://linkedin.com/in/mattpitts")
-	waitDur, _ := time.ParseDuration("10s")
-	err := page.WaitDOMStable(waitDur, .2)
+func (r *LinkedIn) getPage() (*rod.Page, error) {
+	page, err := r.browser.Page(proto.TargetCreateTarget{URL: "https://linkedin.com/in/mattpitts"})
+	if err != nil {
+		return nil, err
+	}
+	waitDur, _ := time.ParseDuration("5s")
+	err = page.WaitDOMStable(waitDur, .2)
+	if err != nil {
+		return nil, err
+	}
 	log.Println("Page Stable")
-	return page, err
+	return page, nil
 }
 
-func (r *LinkedIn) getPage() *rod.Page {
-	result, err, cached := memoize.Call(r.cache, "page", r.retrievePage)
+func (r *LinkedIn) RetrieveProfile() (*LinkedInProfile, error) {
+	page, err := r.getPage()
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
-	if cached {
-		log.Println("Using cached Page")
-	}
-	return result
-}
-
-func (r *LinkedIn) RetrieveProfile() *LinkedInProfile {
-	nameElm, err := r.getPage().Element(".top-card-layout h1.top-card-layout__title")
+	_, err = page.Element("body")
 	if err != nil {
-		html := r.getPage().MustElement("body")
-		log.Fatal("Unable to get initial profile name element from DOM", html, err)
+		return nil, err
 	}
-	name := nameElm.MustText()
-	headline := r.getPage().MustElement(".top-card-layout h2.top-card-layout__headline").MustText()
-	return &LinkedInProfile{Name: name, Headline: headline, Experience: ExtractExperienceList(r.getPage()), Education: ExtractEducationList(r.getPage())}
+	nameElm, err := page.Element(".top-card-layout h1.top-card-layout__title")
+	if err != nil {
+		return nil, err
+	}
+	name, err := nameElm.Text()
+	if err != nil {
+		return nil, err
+	}
+	headlineElm, err := page.Element(".top-card-layout h2.top-card-layout__headline")
+	if err != nil {
+		return nil, err
+	}
+	headline, err := headlineElm.Text()
+	if err != nil {
+		return nil, err
+	}
+	experience, err := ExtractExperienceList(page)
+	if err != nil {
+		return nil, err
+	}
+	education, err := ExtractEducationList(page)
+	if err != nil {
+		return nil, err
+	}
+	return &LinkedInProfile{Name: name, Headline: headline, Experience: experience, Education: education}, nil
 }
 
-func ExtractExperienceList(page *rod.Page) []*LinkedInExperience {
-	expList := page.MustElements("ul.experience__list > li")
+func ExtractExperienceList(page *rod.Page) ([]*LinkedInExperience, error) {
+	expList, err := page.Elements("ul.experience__list > li")
+	if err != nil {
+		return nil, err
+	}
 	return MapElements(expList, ExtractExperience)
 }
 
-func ExtractExperience(element *rod.Element) *LinkedInExperience {
-	title := element.MustElement(".experience-item__subtitle").MustText()
-	companyImage := element.MustElement("img.profile-section-card__image").MustAttribute("src")
-	return &LinkedInExperience{Company: title, CompanyImage: companyImage, Positions: ExtractPositions(element)}
+func ExtractExperience(element *rod.Element) (*LinkedInExperience, error) {
+	titleE, err := element.Element(".experience-item__subtitle")
+	if err != nil {
+		return nil, err
+	}
+	title, err := titleE.Text()
+	if err != nil {
+		return nil, err
+	}
+	companyImageE, err := element.Element("img.profile-section-card__image")
+	if err != nil {
+		return nil, err
+	}
+	companyImage, err := companyImageE.Attribute("src")
+	if err != nil {
+		return nil, err
+	}
+	positions, err := ExtractPositions(element)
+	if err != nil {
+		return nil, err
+	}
+	return &LinkedInExperience{Company: title, CompanyImage: companyImage, Positions: positions}, nil
 }
 
-func ExtractPositions(element *rod.Element) []*LinkedInPosition {
-	class, _ := element.Attribute("class")
+func ExtractPositions(element *rod.Element) ([]*LinkedInPosition, error) {
+	class, err := element.Attribute("class")
+	if err != nil {
+		return nil, err
+	}
 	isGroup := strings.Contains(*class, "experience-group")
 	if isGroup {
-		return MapElements(element.MustElements("li"), ExtractPosition)
+		elements, err := element.Elements("li")
+		if err != nil {
+			return nil, err
+		}
+		return MapElements(elements, ExtractPosition)
 	} else {
-		return []*LinkedInPosition{ExtractPosition(element)}
+		singlePosition, err := ExtractPosition(element)
+		if err != nil {
+			return nil, err
+		}
+		return []*LinkedInPosition{singlePosition}, nil
 	}
 }
 
-func ExtractPosition(element *rod.Element) *LinkedInPosition {
-	title := element.MustElement(".experience-item__title").MustText()
-	metaElements := element.MustElements(".experience-item__meta-item")
+func ExtractPosition(element *rod.Element) (*LinkedInPosition, error) {
+	titleE, err := element.Element(".experience-item__title")
+	if err != nil {
+		return nil, err
+	}
+	title, err := titleE.Text()
+	if err != nil {
+		return nil, err
+	}
+	metaElements, err := element.Elements(".experience-item__meta-item")
+	if err != nil {
+		return nil, err
+	}
+	location, err := metaElements[1].Text()
+	if err != nil {
+		return nil, err
+	}
+	desc, err := ExtractDescription(element)
+	if err != nil {
+		return nil, err
+	}
+	return &LinkedInPosition{Title: title, Description: desc, Location: location}, nil
+}
+
+func ExtractDescription(element *rod.Element) (string, error) {
 	var desc string
 	moreText, err := element.Element("p.show-more-less-text__text--more")
 	if err != nil {
 		lessText, err := element.Element("p.show-more-less-text__text--less")
 		if err != nil {
-			log.Fatal("Unable to find description text element", err)
+			return "", err
 		}
-		desc = lessText.MustText()
+		desc, err = lessText.Text()
+		if err != nil {
+			return "", err
+		}
 	} else {
-		desc = moreText.MustText()
+		desc, err = moreText.Text()
+		if err != nil {
+			return "", err
+		}
 	}
-	return &LinkedInPosition{Title: title, Description: desc, Location: metaElements[1].MustText()}
+	return desc, nil
 }
 
-func ExtractEducationList(page *rod.Page) []*LinkedInEducation {
-	items := page.MustElements("ul.education__list > li")
+func ExtractEducationList(page *rod.Page) ([]*LinkedInEducation, error) {
+	items, err := page.Elements("ul.education__list > li")
+	if err != nil {
+		return nil, err
+	}
 	return MapElements(items, ExtractEducation)
 }
 
-func ExtractEducation(element *rod.Element) *LinkedInEducation {
-	title := element.MustElement("h3 > a").MustText()
-	return &LinkedInEducation{Title: title}
+func ExtractEducation(element *rod.Element) (*LinkedInEducation, error) {
+	titleE, err := element.Element("h3 > a")
+	if err != nil {
+		return nil, err
+	}
+	title, err := titleE.Text()
+	if err != nil {
+		return nil, err
+	}
+	return &LinkedInEducation{Title: title}, nil
 }
 
-func MapElements[V any](ts []*rod.Element, fn func(*rod.Element) V) []V {
+func MapElements[V any](ts []*rod.Element, fn func(*rod.Element) (V, error)) ([]V, error) {
 	result := make([]V, len(ts))
 	for i, t := range ts {
-		result[i] = fn(t)
+		elm, err := fn(t)
+		if err != nil {
+			return nil, err
+		}
+		result[i] = elm
 	}
-	return result
+	return result, nil
 }

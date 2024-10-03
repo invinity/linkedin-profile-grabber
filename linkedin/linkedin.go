@@ -324,17 +324,22 @@ func ExtractProject(element *rod.Element) (*LinkedInProject, error) {
 }
 
 func ExtractStartEndDates(element *rod.Element) (string, string, error) {
+	start, end := "", ""
 	dates, err := element.Elements("span.date-range > time")
 	if err != nil {
 		return "", "", err
 	}
-	start, err := dates[0].Text()
-	if err != nil {
-		return "", "", err
+	if len(dates) > 0 {
+		start, err = dates[0].Text()
+		if err != nil {
+			return "", "", err
+		}
 	}
-	end, err := dates[1].Text()
-	if err != nil {
-		return "", "", err
+	if len(dates) > 1 {
+		end, err = dates[1].Text()
+		if err != nil {
+			return "", "", err
+		}
 	}
 	return start, end, nil
 }

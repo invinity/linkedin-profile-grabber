@@ -43,21 +43,21 @@ type LinkedInEducation struct {
 }
 
 func (r *LinkedIn) getPage() (*rod.Page, error) {
-	page, err := r.browser.Page(proto.TargetCreateTarget{URL: "https://linkedin.com/in/mattpitts"})
+	page, err := r.browser.Page(proto.TargetCreateTarget{URL: "https://www.linkedin.com/"})
 	if err != nil {
 		return nil, err
 	}
 	waitDur, _ := time.ParseDuration("5s")
-	err = page.WaitDOMStable(waitDur, .2)
+	err = page.WaitDOMStable(waitDur, .5)
 	if err != nil {
 		return nil, err
 	}
-	log.Println("Page Stable")
-	return page, nil
-}
-
-func (r *LinkedIn) RetrieveProfile() (*LinkedInProfile, error) {
-	page, err := r.getPage()
+	log.Println("Page stable, navigating to profile")
+	err = page.Navigate("https://www.linkedin.com/in/mattpitts")
+	if err != nil {
+		return nil, err
+	}
+	err = page.WaitDOMStable(waitDur, .5)
 	if err != nil {
 		return nil, err
 	}
@@ -67,6 +67,14 @@ func (r *LinkedIn) RetrieveProfile() (*LinkedInProfile, error) {
 	}
 	title := info.Title
 	log.Println("Got page title: ", title)
+	return page, nil
+}
+
+func (r *LinkedIn) RetrieveProfile() (*LinkedInProfile, error) {
+	page, err := r.getPage()
+	if err != nil {
+		return nil, err
+	}
 	_, err = page.Element("body")
 	if err != nil {
 		return nil, err

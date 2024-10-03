@@ -17,11 +17,11 @@ type Controller struct {
 }
 
 func New(browser *rod.Browser) *Controller {
-	return &Controller{linkedinInst: linkedin.New(browser), cache: memoize.NewMemoizer(1*time.Minute, 1*time.Minute)}
+	return &Controller{linkedinInst: linkedin.New(browser), cache: memoize.NewMemoizer(20*time.Minute, 20*time.Minute)}
 }
 
 func (r *Controller) GetLinkedInProfile(w http.ResponseWriter, req *http.Request) {
-	profile, err := r.retrieveProfile()
+	profile, err := r.getProfile()
 	if err != nil {
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 	} else {
@@ -30,8 +30,8 @@ func (r *Controller) GetLinkedInProfile(w http.ResponseWriter, req *http.Request
 	}
 }
 
-func (r *Controller) retrieveProfile() (*linkedin.LinkedInProfile, error) {
-	profile, err, cached := memoize.Call(r.cache, "profile", r.linkedinInst.RetrieveProfile)
+func (r *Controller) getProfile() (*linkedin.LinkedInProfile, error) {
+	profile, err, cached := memoize.Call(r.cache, "profile", r.retrieveProfile)
 	if err != nil {
 		return nil, err
 	}
@@ -39,4 +39,8 @@ func (r *Controller) retrieveProfile() (*linkedin.LinkedInProfile, error) {
 		log.Println("Using cached Profile")
 	}
 	return profile, nil
+}
+
+func (r *Controller) retrieveProfile() (*linkedin.LinkedInProfile, error) {
+	return r.linkedinInst.RetrieveProfile("matthew", "pitts", "mattpitts")
 }

@@ -1,6 +1,7 @@
 package linkedin
 
 import (
+	"fmt"
 	"log"
 	"strings"
 	"time"
@@ -23,12 +24,12 @@ type LinkedInProfile struct {
 	Headline   string
 	Experience []*LinkedInExperience
 	Education  []*LinkedInEducation
+	Projects   []*LinkedInProject
 }
 
 type LinkedInPosition struct {
 	Title       string
-	Start       string
-	End         string
+	Dates       string
 	Location    string
 	Description string
 }
@@ -40,10 +41,19 @@ type LinkedInExperience struct {
 }
 
 type LinkedInEducation struct {
-	Title string
+	Title       string
+	Subtitle    string
+	Dates       string
+	Description string
 }
 
-func (r *LinkedIn) getPage() (*rod.Page, error) {
+type LinkedInProject struct {
+	Title       string
+	Dates       string
+	Description string
+}
+
+func (r *LinkedIn) getPage(firstName string, lastName string, profileAlias string) (*rod.Page, error) {
 	page, err := r.browser.Page(proto.TargetCreateTarget{URL: "https://www.linkedin.com"})
 	if err != nil {
 		return nil, err
@@ -64,22 +74,28 @@ func (r *LinkedIn) getPage() (*rod.Page, error) {
 		return nil, err
 	}
 	log.Println("Got page ", page.MustInfo().Title)
-	firstName, err := page.Element("input[name='firstName']")
+	firstNameElm, err := page.Element("input[name='firstName']")
 	if err != nil {
 		return nil, err
 	}
-	lastName, err := page.Element("input[name='lastName']")
+	lastNameElm, err := page.Element("input[name='lastName']")
 	if err != nil {
 		return nil, err
 	}
-	firstName.MustType(KeyM, KeyA, KeyT, KeyT, KeyH, KeyE, KeyW)
-	lastName.MustType(KeyP, KeyI, KeyT, KeyT, KeyS, Enter)
+	for _, v := range firstName {
+		firstNameElm.MustType(Key(v))
+	}
+	for _, v := range lastName {
+		lastNameElm.MustType(Key(v))
+	}
+	lastNameElm.MustType(Enter)
 	err = page.WaitDOMStable(waitDur, .5)
 	if err != nil {
 		return nil, err
 	}
 	log.Println("Got page ", page.MustInfo().Title)
-	profileLink, err := page.Element("a[href='https://www.linkedin.com/in/mattpitts?trk=people-guest_people_search-card']")
+	profileUrl := fmt.Sprintf("https://www.linkedin.com/in/%s?trk=people-guest_people_search-card", profileAlias)
+	profileLink, err := page.Element(fmt.Sprintf("a[href='%s']", profileUrl))
 	if err != nil {
 		return nil, err
 	}
@@ -92,8 +108,8 @@ func (r *LinkedIn) getPage() (*rod.Page, error) {
 	return page, nil
 }
 
-func (r *LinkedIn) RetrieveProfile() (*LinkedInProfile, error) {
-	page, err := r.getPage()
+func (r *LinkedIn) RetrieveProfile(firstName string, lastName string, profileAlias string) (*LinkedInProfile, error) {
+	page, err := r.getPage(firstName, lastName, profileAlias)
 	if err != nil {
 		return nil, err
 	}
@@ -125,7 +141,11 @@ func (r *LinkedIn) RetrieveProfile() (*LinkedInProfile, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &LinkedInProfile{Name: name, Headline: headline, Experience: experience, Education: education}, nil
+	projects, err := ExtractProjectList(page)
+	if err != nil {
+		return nil, err
+	}
+	return &LinkedInProfile{Name: name, Headline: headline, Experience: experience, Education: education, Projects: projects}, nil
 }
 
 func ExtractExperienceList(page *rod.Page) ([]*LinkedInExperience, error) {
@@ -243,7 +263,51 @@ func ExtractEducation(element *rod.Element) (*LinkedInEducation, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &LinkedInEducation{Title: title}, nil
+	subtitleElms, err := element.Elements("h4 > span")
+	if err != nil {
+		return nil, err
+	}
+	subtitle := ""
+	for _, v := range subtitleElms {
+		subtitle += v.MustText()
+	}
+	desc, err := ExtractDescription(element)
+	if err != nil {
+		return nil, err
+	}
+	return &LinkedInEducation{Title: title, Subtitle: subtitle, Description: desc}, nil
+}
+
+func ExtractProjectList(page *rod.Page) ([]*LinkedInProject, error) {
+	items, err := page.Elements("ul.projects__list > li")
+	if err != nil {
+		return nil, err
+	}
+	return MapElements(items, ExtractProject)
+}
+
+func ExtractProject(element *rod.Element) (*LinkedInProject, error) {
+	titleE, err := element.Element("div > h3")
+	if err != nil {
+		return nil, err
+	}
+	title, err := titleE.Text()
+	if err != nil {
+		return nil, err
+	}
+	datesE, err := element.Element("div > h4 > span.date-range")
+	if err != nil {
+		return nil, err
+	}
+	dates, err := datesE.Text()
+	if err != nil {
+		return nil, err
+	}
+	desc, err := ExtractDescription(element)
+	if err != nil {
+		return nil, err
+	}
+	return &LinkedInProject{Title: title, Dates: dates, Description: desc}, nil
 }
 
 func MapElements[V any](ts []*rod.Element, fn func(*rod.Element) (V, error)) ([]V, error) {

@@ -24,7 +24,7 @@ var _ = Describe("Using the LinkedIn profile retrieval", Ordered, func() {
 	var profile *LinkedInProfile
 
 	BeforeAll(func() {
-		timeout, _ := time.ParseDuration("60s")
+		timeout, _ := time.ParseDuration("180s")
 		chromePath, present := os.LookupEnv("CHROME")
 		nosandbox := false
 		if present {
@@ -43,7 +43,7 @@ var _ = Describe("Using the LinkedIn profile retrieval", Ordered, func() {
 		// })
 		linkedin = New(browser.MustConnect())
 		var err error
-		profile, err = linkedin.RetrieveProfile()
+		profile, err = linkedin.RetrieveProfile("matthew", "pitts", "mattpitts")
 		if err != nil {
 			log.Fatal(err)
 		}

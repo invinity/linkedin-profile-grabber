@@ -21,6 +21,9 @@ func New(browser *rod.Browser) *Controller {
 }
 
 func (r *Controller) GetLinkedInProfile(w http.ResponseWriter, req *http.Request) {
+	w.Header().Set("Access-Control-Allow-Origin", req.Header.Get("Origin"))
+	w.Header().Set("Access-Control-Allow-Methods", "GET,OPTIONS")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type,Accept")
 	profile, err := r.getProfile()
 	if err != nil {
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)

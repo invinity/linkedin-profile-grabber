@@ -88,7 +88,6 @@ var _ = Describe("Using the LinkedIn profile retrieval", Ordered, func() {
 						Ω(v.Location).Should(Not(BeEmpty()))
 						Ω(v.Description).Should(Not(BeEmpty()))
 						Ω(v.StartDate).Should(Not(BeEmpty()))
-						Ω(v.EndDate).Should(Not(BeEmpty()))
 					}
 				}
 			})

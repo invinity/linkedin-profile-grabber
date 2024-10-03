@@ -12,7 +12,7 @@ import (
 )
 
 func main() {
-	timeout, _ := time.ParseDuration("60s")
+	timeout, _ := time.ParseDuration("180s")
 	path, found := launcher.LookPath()
 	if !found {
 		log.Fatal("Did not find chrome in go-rod standard locations")

@@ -78,6 +78,35 @@ var _ = Describe("Using the LinkedIn profile retrieval", Ordered, func() {
 					Ω(e.Positions).Should(Not(BeEmpty()))
 				}
 			})
+
+			It("each Experience Position should have populate fields", func() {
+				exp := profile.Experience
+				for _, e := range exp {
+					positions := e.Positions
+					for _, v := range positions {
+						Ω(v.Title).Should(Not(BeEmpty()))
+						Ω(v.Location).Should(Not(BeEmpty()))
+						Ω(v.Description).Should(Not(BeEmpty()))
+						Ω(v.StartDate).Should(Not(BeEmpty()))
+						Ω(v.EndDate).Should(Not(BeEmpty()))
+					}
+				}
+			})
+		})
+
+		Context("loads Education data", func() {
+			It("should load all education info", func() {
+				Ω(profile.Education).Should(HaveLen(1))
+			})
+
+			It("Education should have fields populated", func() {
+				edu := profile.Education[0]
+				Ω(edu.Title).Should(BeEquivalentTo("University of North Carolina at Charlotte"))
+				Ω(edu.Subtitle).Should(BeEquivalentTo("BSEE Electrical Engineering"))
+				Ω(edu.StartDate).Should(BeEquivalentTo("1998"))
+				Ω(edu.EndDate).Should(BeEquivalentTo("2003"))
+				Ω(edu.Description).Should(BeEquivalentTo("Dean's List (4 of 8 semesters)"))
+			})
 		})
 	})
 

@@ -29,7 +29,8 @@ type LinkedInProfile struct {
 
 type LinkedInPosition struct {
 	Title       string
-	Dates       string
+	StartDate   string
+	EndDate     string
 	Location    string
 	Description string
 }
@@ -43,7 +44,8 @@ type LinkedInExperience struct {
 type LinkedInEducation struct {
 	Title       string
 	Subtitle    string
-	Dates       string
+	StartDate   string
+	EndDate     string
 	Description string
 }
 
@@ -218,11 +220,15 @@ func ExtractPosition(element *rod.Element) (*LinkedInPosition, error) {
 	if err != nil {
 		return nil, err
 	}
+	start, end, err := ExtractStartEndDates(element)
+	if err != nil {
+		return nil, err
+	}
 	desc, err := ExtractDescription(element)
 	if err != nil {
 		return nil, err
 	}
-	return &LinkedInPosition{Title: title, Description: desc, Location: location}, nil
+	return &LinkedInPosition{Title: title, Description: desc, Location: location, StartDate: start, EndDate: end}, nil
 }
 
 func ExtractDescription(element *rod.Element) (string, error) {
@@ -269,13 +275,20 @@ func ExtractEducation(element *rod.Element) (*LinkedInEducation, error) {
 	}
 	subtitle := ""
 	for _, v := range subtitleElms {
+		if subtitle != "" {
+			subtitle += " "
+		}
 		subtitle += v.MustText()
 	}
 	desc, err := ExtractDescription(element)
 	if err != nil {
 		return nil, err
 	}
-	return &LinkedInEducation{Title: title, Subtitle: subtitle, Description: desc}, nil
+	start, end, err := ExtractStartEndDates(element)
+	if err != nil {
+		return nil, err
+	}
+	return &LinkedInEducation{Title: title, Subtitle: subtitle, Description: desc, StartDate: start, EndDate: end}, nil
 }
 
 func ExtractProjectList(page *rod.Page) ([]*LinkedInProject, error) {
@@ -308,6 +321,22 @@ func ExtractProject(element *rod.Element) (*LinkedInProject, error) {
 		return nil, err
 	}
 	return &LinkedInProject{Title: title, Dates: dates, Description: desc}, nil
+}
+
+func ExtractStartEndDates(element *rod.Element) (string, string, error) {
+	dates, err := element.Elements("span.date-range > time")
+	if err != nil {
+		return "", "", err
+	}
+	start, err := dates[0].Text()
+	if err != nil {
+		return "", "", err
+	}
+	end, err := dates[1].Text()
+	if err != nil {
+		return "", "", err
+	}
+	return start, end, nil
 }
 
 func MapElements[V any](ts []*rod.Element, fn func(*rod.Element) (V, error)) ([]V, error) {

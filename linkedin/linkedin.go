@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/go-rod/rod"
+	. "github.com/go-rod/rod/lib/input"
 	"github.com/go-rod/rod/lib/proto"
 )
 
@@ -43,30 +44,51 @@ type LinkedInEducation struct {
 }
 
 func (r *LinkedIn) getPage() (*rod.Page, error) {
-	page, err := r.browser.Page(proto.TargetCreateTarget{URL: "https://www.linkedin.com/"})
+	page, err := r.browser.Page(proto.TargetCreateTarget{URL: "https://www.linkedin.com"})
 	if err != nil {
 		return nil, err
 	}
-	waitDur, _ := time.ParseDuration("5s")
+	waitDur, _ := time.ParseDuration("10s")
 	err = page.WaitDOMStable(waitDur, .5)
 	if err != nil {
 		return nil, err
 	}
-	log.Println("Page stable, navigating to profile")
-	err = page.Navigate("https://www.linkedin.com/in/mattpitts")
+	log.Println("Got page ", page.MustInfo().Title)
+	peopleLink, err := page.Element("a[data-tracking-control-name='guest_homepage-basic_guest_nav_menu_people']")
 	if err != nil {
 		return nil, err
 	}
+	peopleLink.MustType(Enter)
 	err = page.WaitDOMStable(waitDur, .5)
 	if err != nil {
 		return nil, err
 	}
-	info, err := page.Info()
+	log.Println("Got page ", page.MustInfo().Title)
+	firstName, err := page.Element("input[name='firstName']")
 	if err != nil {
 		return nil, err
 	}
-	title := info.Title
-	log.Println("Got page title: ", title)
+	lastName, err := page.Element("input[name='lastName']")
+	if err != nil {
+		return nil, err
+	}
+	firstName.MustType(KeyM, KeyA, KeyT, KeyT, KeyH, KeyE, KeyW)
+	lastName.MustType(KeyP, KeyI, KeyT, KeyT, KeyS, Enter)
+	err = page.WaitDOMStable(waitDur, .5)
+	if err != nil {
+		return nil, err
+	}
+	log.Println("Got page ", page.MustInfo().Title)
+	profileLink, err := page.Element("a[href='https://www.linkedin.com/in/mattpitts?trk=people-guest_people_search-card']")
+	if err != nil {
+		return nil, err
+	}
+	profileLink.MustType(Enter)
+	err = page.WaitDOMStable(waitDur, .5)
+	if err != nil {
+		return nil, err
+	}
+	log.Println("Got page ", page.MustInfo().Title)
 	return page, nil
 }
 

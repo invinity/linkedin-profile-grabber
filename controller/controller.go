@@ -2,6 +2,7 @@ package controller
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"time"
@@ -17,13 +18,14 @@ type Controller struct {
 }
 
 func New(browser *rod.Browser) *Controller {
-	return &Controller{linkedinInst: linkedin.New(browser), cache: memoize.NewMemoizer(20*time.Minute, 20*time.Minute)}
+	return &Controller{linkedinInst: linkedin.New(browser), cache: memoize.NewMemoizer(60*time.Minute, 5*time.Minute)}
 }
 
 func (r *Controller) GetLinkedInProfile(w http.ResponseWriter, req *http.Request) {
 	w.Header().Set("Access-Control-Allow-Origin", req.Header.Get("Origin"))
 	w.Header().Set("Access-Control-Allow-Methods", "GET,OPTIONS")
 	w.Header().Set("Access-Control-Allow-Headers", "Content-Type,Accept")
+	w.Header().Set("Cache-Control", fmt.Sprintf("max-age=%f", (60*time.Minute).Seconds()))
 	profile, err := r.getProfile()
 	if err != nil {
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)

@@ -22,6 +22,7 @@ type LinkedIn struct {
 type LinkedInProfile struct {
 	Name       string
 	Headline   string
+	Summary    string
 	Experience []*LinkedInExperience
 	Education  []*LinkedInEducation
 	Projects   []*LinkedInProject
@@ -135,6 +136,14 @@ func (r *LinkedIn) RetrieveProfile(firstName string, lastName string, profileAli
 	if err != nil {
 		return nil, err
 	}
+	summaryElm, err := page.Element("section[data-section=summary] p")
+	if err != nil {
+		return nil, err
+	}
+	summary, err := summaryElm.Text()
+	if err != nil {
+		return nil, err
+	}
 	experience, err := ExtractExperienceList(page)
 	if err != nil {
 		return nil, err
@@ -147,7 +156,7 @@ func (r *LinkedIn) RetrieveProfile(firstName string, lastName string, profileAli
 	if err != nil {
 		return nil, err
 	}
-	return &LinkedInProfile{Name: name, Headline: headline, Experience: experience, Education: education, Projects: projects}, nil
+	return &LinkedInProfile{Name: name, Headline: headline, Summary: summary, Experience: experience, Education: education, Projects: projects}, nil
 }
 
 func ExtractExperienceList(page *rod.Page) ([]*LinkedInExperience, error) {

@@ -57,6 +57,7 @@ var _ = Describe("Using the LinkedIn profile retrieval", Ordered, func() {
 			It("should load basic user info", func() {
 				Ω(profile.Name).Should(BeEquivalentTo("Matthew Pitts"))
 				Ω(profile.Headline).Should(Not(BeEmpty()))
+				Ω(profile.Summary).Should(Not(BeEmpty()))
 			})
 		})
 

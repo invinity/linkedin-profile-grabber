@@ -53,7 +53,8 @@ type LinkedInEducation struct {
 
 type LinkedInProject struct {
 	Title       string
-	Dates       string
+	StartDate   string
+	EndDate     string
 	Description string
 }
 
@@ -332,11 +333,7 @@ func ExtractProject(element *rod.Element) (*LinkedInProject, error) {
 	if err != nil {
 		return nil, err
 	}
-	datesE, err := element.Element("div > h4 > span.date-range")
-	if err != nil {
-		return nil, err
-	}
-	dates, err := datesE.Text()
+	start, end, err := ExtractStartEndDates(element)
 	if err != nil {
 		return nil, err
 	}
@@ -344,7 +341,7 @@ func ExtractProject(element *rod.Element) (*LinkedInProject, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &LinkedInProject{Title: title, Dates: dates, Description: desc}, nil
+	return &LinkedInProject{Title: title, StartDate: start, EndDate: end, Description: desc}, nil
 }
 
 func ExtractCertificationList(page *rod.Page) ([]*LinkedInCertification, error) {

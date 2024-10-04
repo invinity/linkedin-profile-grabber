@@ -95,6 +95,20 @@ var _ = Describe("Using the LinkedIn profile retrieval", Ordered, func() {
 			})
 		})
 
+		Context("loads Project data", func() {
+			It("should load all project info", func() {
+				Ω(profile.Projects).Should(HaveLen(2))
+			})
+
+			It("Projects should have fields populated", func() {
+				project := profile.Projects[0]
+				Ω(project.Title).Should(BeEquivalentTo("Cloud Proxy Log Copying Automation"))
+				Ω(project.StartDate).Should(BeEquivalentTo("Jun 2023"))
+				Ω(project.EndDate).Should(BeEquivalentTo("Dec 2023"))
+				Ω(project.Description).Should(Not(BeEmpty()))
+			})
+		})
+
 		Context("loads Education data", func() {
 			It("should load all education info", func() {
 				Ω(profile.Education).Should(HaveLen(1))

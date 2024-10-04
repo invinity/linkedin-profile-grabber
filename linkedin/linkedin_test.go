@@ -76,6 +76,7 @@ var _ = Describe("Using the LinkedIn profile retrieval", Ordered, func() {
 			It("each Experience should have one or more Positions", func() {
 				exp := profile.Experience
 				for _, e := range exp {
+					Ω(e.CompanyImage).Should(Not(BeEquivalentTo("")))
 					Ω(e.Positions).Should(Not(BeEmpty()))
 				}
 			})
@@ -106,6 +107,20 @@ var _ = Describe("Using the LinkedIn profile retrieval", Ordered, func() {
 				Ω(edu.StartDate).Should(BeEquivalentTo("1998"))
 				Ω(edu.EndDate).Should(BeEquivalentTo("2003"))
 				Ω(edu.Description).Should(BeEquivalentTo("Dean's List (4 of 8 semesters)"))
+			})
+		})
+
+		Context("loads Certification data", func() {
+			It("should load all certification info", func() {
+				Ω(profile.Certifications).Should(HaveLen(2))
+			})
+
+			It("Certifications should have fields populated", func() {
+				cert := profile.Certifications[1]
+				Ω(cert.Title).Should(BeEquivalentTo("GIAC Secure Software Programmer - Java"))
+				Ω(cert.Institution).Should(BeEquivalentTo("GIAC Certifications"))
+				Ω(cert.IssuedOn).Should(BeEquivalentTo("May 2017"))
+				Ω(cert.ExpiresOn).Should(BeEquivalentTo("May 2021"))
 			})
 		})
 	})

@@ -20,12 +20,13 @@ type LinkedIn struct {
 }
 
 type LinkedInProfile struct {
-	Name       string
-	Headline   string
-	Summary    string
-	Experience []*LinkedInExperience
-	Education  []*LinkedInEducation
-	Projects   []*LinkedInProject
+	Name           string
+	Headline       string
+	Summary        string
+	Experience     []*LinkedInExperience
+	Education      []*LinkedInEducation
+	Projects       []*LinkedInProject
+	Certifications []*LinkedInCertification
 }
 
 type LinkedInPosition struct {
@@ -54,6 +55,14 @@ type LinkedInProject struct {
 	Title       string
 	Dates       string
 	Description string
+}
+
+type LinkedInCertification struct {
+	Title       string
+	Institution string
+	ImgUrl      *string
+	IssuedOn    string
+	ExpiresOn   string
 }
 
 func (r *LinkedIn) getPage(firstName string, lastName string, profileAlias string) (*rod.Page, error) {
@@ -156,7 +165,11 @@ func (r *LinkedIn) RetrieveProfile(firstName string, lastName string, profileAli
 	if err != nil {
 		return nil, err
 	}
-	return &LinkedInProfile{Name: name, Headline: headline, Summary: summary, Experience: experience, Education: education, Projects: projects}, nil
+	certifications, err := ExtractCertificationList(page)
+	if err != nil {
+		return nil, err
+	}
+	return &LinkedInProfile{Name: name, Headline: headline, Summary: summary, Experience: experience, Education: education, Projects: projects, Certifications: certifications}, nil
 }
 
 func ExtractExperienceList(page *rod.Page) ([]*LinkedInExperience, error) {
@@ -176,11 +189,11 @@ func ExtractExperience(element *rod.Element) (*LinkedInExperience, error) {
 	if err != nil {
 		return nil, err
 	}
-	companyImageE, err := element.Element("img.profile-section-card__image")
+	companyImageE, err := element.Element("img")
 	if err != nil {
 		return nil, err
 	}
-	companyImage, err := companyImageE.Attribute("src")
+	companyImage, err := companyImageE.Attribute("data-delayed-url")
 	if err != nil {
 		return nil, err
 	}
@@ -252,11 +265,13 @@ func ExtractDescription(element *rod.Element) (string, error) {
 		if err != nil {
 			return "", err
 		}
+		desc = strings.Replace(desc, "Show More", "", 1)
 	} else {
 		desc, err = moreText.Text()
 		if err != nil {
 			return "", err
 		}
+		desc = strings.Replace(desc, "Show Less", "", 1)
 	}
 	return desc, nil
 }
@@ -330,6 +345,59 @@ func ExtractProject(element *rod.Element) (*LinkedInProject, error) {
 		return nil, err
 	}
 	return &LinkedInProject{Title: title, Dates: dates, Description: desc}, nil
+}
+
+func ExtractCertificationList(page *rod.Page) ([]*LinkedInCertification, error) {
+	items, err := page.Elements("section[data-section=certifications] ul li")
+	if err != nil {
+		return nil, err
+	}
+	return MapElements(items, ExtractCertifcation)
+}
+
+func ExtractCertifcation(element *rod.Element) (*LinkedInCertification, error) {
+	titleE, err := element.Element("h3")
+	if err != nil {
+		return nil, err
+	}
+	title, err := titleE.Text()
+	if err != nil {
+		return nil, err
+	}
+	institutionE, err := element.Element("h4 > a")
+	if err != nil {
+		return nil, err
+	}
+	institution, err := institutionE.Text()
+	if err != nil {
+		return nil, err
+	}
+	institutionImgE, err := element.Element("img")
+	if err != nil {
+		return nil, err
+	}
+	institutionImg, err := institutionImgE.Attribute("data-delayed-url")
+	if err != nil {
+		return nil, err
+	}
+	datesE, err := element.Elements("span > time")
+	if err != nil {
+		return nil, err
+	}
+	issued, expires := "", ""
+	if len(datesE) >= 1 {
+		issued, err = datesE[0].Text()
+		if err != nil {
+			return nil, err
+		}
+	}
+	if len(datesE) >= 2 {
+		expires, err = datesE[1].Text()
+		if err != nil {
+			return nil, err
+		}
+	}
+	return &LinkedInCertification{Title: title, Institution: institution, ImgUrl: institutionImg, IssuedOn: issued, ExpiresOn: expires}, nil
 }
 
 func ExtractStartEndDates(element *rod.Element) (string, string, error) {

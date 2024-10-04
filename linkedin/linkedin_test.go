@@ -58,6 +58,8 @@ var _ = Describe("Using the LinkedIn profile retrieval", Ordered, func() {
 				Ω(profile.Name).Should(BeEquivalentTo("Matthew Pitts"))
 				Ω(profile.Headline).Should(Not(BeEmpty()))
 				Ω(profile.Summary).Should(Not(BeEmpty()))
+				Ω(profile.Summary).Should(Not(ContainSubstring("Show less")))
+				Ω(profile.Summary).Should(Not(ContainSubstring("Show more")))
 			})
 		})
 
@@ -90,6 +92,8 @@ var _ = Describe("Using the LinkedIn profile retrieval", Ordered, func() {
 						Ω(v.Location).Should(Not(BeEmpty()))
 						Ω(v.Description).Should(Not(BeEmpty()))
 						Ω(v.StartDate).Should(Not(BeEmpty()))
+						Ω(v.Description).Should(Not(ContainSubstring("Show less")))
+						Ω(v.Description).Should(Not(ContainSubstring("Show more")))
 					}
 				}
 			})
@@ -106,6 +110,8 @@ var _ = Describe("Using the LinkedIn profile retrieval", Ordered, func() {
 				Ω(project.StartDate).Should(BeEquivalentTo("Jun 2023"))
 				Ω(project.EndDate).Should(BeEquivalentTo("Dec 2023"))
 				Ω(project.Description).Should(Not(BeEmpty()))
+				Ω(project.Description).Should(Not(ContainSubstring("Show less")))
+				Ω(project.Description).Should(Not(ContainSubstring("Show more")))
 			})
 		})
 

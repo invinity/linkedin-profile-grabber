@@ -266,13 +266,13 @@ func ExtractDescription(element *rod.Element) (string, error) {
 		if err != nil {
 			return "", err
 		}
-		desc = strings.Replace(desc, "Show More", "", 1)
+		desc = strings.Replace(desc, "Show more", "", 1)
 	} else {
 		desc, err = moreText.Text()
 		if err != nil {
 			return "", err
 		}
-		desc = strings.Replace(desc, "Show Less", "", 1)
+		desc = strings.Replace(desc, "Show less", "", 1)
 	}
 	return desc, nil
 }

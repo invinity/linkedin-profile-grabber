@@ -97,6 +97,11 @@ var _ = Describe("Using the LinkedIn profile retrieval", Ordered, func() {
 					}
 				}
 			})
+
+			It("a single specific Experience Position should have correct fields", func() {
+				Ω(profile.Experience[1].Company).Should(BeEquivalentTo("Technisource"))
+				Ω(profile.Experience[1].Positions[0].Location).Should(BeEquivalentTo("Winston-Salem, North Carolina, United States"))
+			})
 		})
 
 		Context("loads Project data", func() {

@@ -66,13 +66,13 @@ type LinkedInCertification struct {
 	ExpiresOn   string
 }
 
-func (r *LinkedIn) getPage(firstName string, lastName string, profileAlias string) (*rod.Page, error) {
+func (r *LinkedIn) navigateToProfilePage(firstName string, lastName string, profileAlias string) (*rod.Page, error) {
 	page, err := r.browser.Page(proto.TargetCreateTarget{URL: "https://www.linkedin.com"})
 	if err != nil {
 		return nil, err
 	}
-	waitDur, _ := time.ParseDuration("10s")
-	err = page.WaitDOMStable(waitDur, .5)
+	waitDur, _ := time.ParseDuration("2s")
+	err = page.WaitDOMStable(waitDur, .2)
 	if err != nil {
 		return nil, err
 	}
@@ -82,7 +82,7 @@ func (r *LinkedIn) getPage(firstName string, lastName string, profileAlias strin
 		return nil, err
 	}
 	peopleLink.MustType(Enter)
-	err = page.WaitDOMStable(waitDur, .5)
+	err = page.WaitDOMStable(waitDur, .2)
 	if err != nil {
 		return nil, err
 	}
@@ -102,7 +102,7 @@ func (r *LinkedIn) getPage(firstName string, lastName string, profileAlias strin
 		lastNameElm.MustType(Key(v))
 	}
 	lastNameElm.MustType(Enter)
-	err = page.WaitDOMStable(waitDur, .5)
+	err = page.WaitDOMStable(waitDur, .2)
 	if err != nil {
 		return nil, err
 	}
@@ -113,7 +113,7 @@ func (r *LinkedIn) getPage(firstName string, lastName string, profileAlias strin
 		return nil, err
 	}
 	profileLink.MustType(Enter)
-	err = page.WaitDOMStable(waitDur, .5)
+	err = page.WaitDOMStable(waitDur, .2)
 	if err != nil {
 		return nil, err
 	}
@@ -122,7 +122,7 @@ func (r *LinkedIn) getPage(firstName string, lastName string, profileAlias strin
 }
 
 func (r *LinkedIn) RetrieveProfile(firstName string, lastName string, profileAlias string) (*LinkedInProfile, error) {
-	page, err := r.getPage(firstName, lastName, profileAlias)
+	page, err := r.navigateToProfilePage(firstName, lastName, profileAlias)
 	if err != nil {
 		return nil, err
 	}

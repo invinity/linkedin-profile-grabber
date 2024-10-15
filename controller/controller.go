@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"sync"
 	"time"
 
@@ -14,13 +15,13 @@ import (
 )
 
 type Controller struct {
-	linkedinInst *linkedin.LinkedIn
+	linkedinInst *linkedin.LinkedInBrowser
 	cache        *memoize.Memoizer
 	lock         sync.Mutex
 }
 
 func New(browser *rod.Browser) *Controller {
-	return &Controller{linkedinInst: linkedin.New(browser), cache: memoize.NewMemoizer(60*time.Minute, 5*time.Minute), lock: sync.Mutex{}}
+	return &Controller{linkedinInst: linkedin.NewBrowser(browser), cache: memoize.NewMemoizer(60*time.Minute, 5*time.Minute), lock: sync.Mutex{}}
 }
 
 func (r *Controller) GetLinkedInProfile(w http.ResponseWriter, req *http.Request) {
@@ -51,5 +52,5 @@ func (r *Controller) getProfile() (*linkedin.LinkedInProfile, error) {
 func (r *Controller) retrieveProfile() (*linkedin.LinkedInProfile, error) {
 	r.lock.Lock()
 	defer r.lock.Unlock()
-	return r.linkedinInst.RetrieveProfile("matthew", "pitts", "mattpitts")
+	return r.linkedinInst.RetrieveProfile(os.Getenv("LINKEDIN_EMAIL"), os.Getenv("LINKEDIN_PASSWORD"))
 }

@@ -1,7 +1,6 @@
 package linkedin
 
 import (
-	"fmt"
 	"log"
 	"strings"
 	"time"
@@ -11,11 +10,11 @@ import (
 	"github.com/go-rod/rod/lib/proto"
 )
 
-func New(browser *rod.Browser) *LinkedIn {
-	return &LinkedIn{browser: browser}
+func NewBrowser(browser *rod.Browser) *LinkedInBrowser {
+	return &LinkedInBrowser{browser: browser}
 }
 
-type LinkedIn struct {
+type LinkedInBrowser struct {
 	browser *rod.Browser
 }
 
@@ -66,8 +65,8 @@ type LinkedInCertification struct {
 	ExpiresOn   string
 }
 
-func (r *LinkedIn) navigateToProfilePage(firstName string, lastName string, profileAlias string) (*rod.Page, error) {
-	page, err := r.browser.Page(proto.TargetCreateTarget{URL: "https://www.linkedin.com"})
+func (r *LinkedInBrowser) navigateToProfilePage(email string, password string) (*rod.Page, error) {
+	page, err := r.browser.Page(proto.TargetCreateTarget{URL: "https://www.linkedin.com/login?fromSignIn=true&trk=guest_homepage-basic_nav-header-signin"})
 	if err != nil {
 		return nil, err
 	}
@@ -77,52 +76,75 @@ func (r *LinkedIn) navigateToProfilePage(firstName string, lastName string, prof
 		return nil, err
 	}
 	log.Println("Got page ", page.MustInfo().Title)
-	peopleLink, err := page.Element("a[data-tracking-control-name='guest_homepage-basic_guest_nav_menu_people']")
+	usernameInput, err := page.Element("input[id=username]")
 	if err != nil {
 		return nil, err
 	}
-	peopleLink.MustType(Enter)
+	for _, v := range email {
+		usernameInput.MustType(Key(v))
+	}
+	passwordInput, err := page.Element("input[id=password]")
+	if err != nil {
+		return nil, err
+	}
+	for _, v := range password {
+		passwordInput.MustType(Key(v))
+	}
+	passwordInput.MustType(Enter)
 	err = page.WaitDOMStable(waitDur, .2)
 	if err != nil {
 		return nil, err
 	}
 	log.Println("Got page ", page.MustInfo().Title)
-	firstNameElm, err := page.Element("input[name='firstName']")
+	err = page.Navigate("https://www.linkedin.com/public-profile/settings?trk=d_flagship3_profile_self_view_public_profile")
 	if err != nil {
 		return nil, err
 	}
-	lastNameElm, err := page.Element("input[name='lastName']")
-	if err != nil {
-		return nil, err
-	}
-	for _, v := range firstName {
-		firstNameElm.MustType(Key(v))
-	}
-	for _, v := range lastName {
-		lastNameElm.MustType(Key(v))
-	}
-	lastNameElm.MustType(Enter)
 	err = page.WaitDOMStable(waitDur, .2)
 	if err != nil {
 		return nil, err
 	}
-	log.Println("Got page ", page.MustInfo().Title)
-	profileUrl := fmt.Sprintf("https://www.linkedin.com/in/%s?trk=people-guest_people_search-card", profileAlias)
-	profileLink, err := page.Element(fmt.Sprintf("a[href='%s']", profileUrl))
-	if err != nil {
-		return nil, err
-	}
-	profileLink.MustType(Enter)
-	err = page.WaitDOMStable(waitDur, .2)
-	if err != nil {
-		return nil, err
-	}
-	log.Println("Got page ", page.MustInfo().Title)
+	title := page.MustInfo().Title
+	log.Println("Got page ", title)
+	// if !strings.HasPrefix(title, "Search for people") {
+	// 	return nil, errors.New("Unexpected page: " + title)
+	// }
+	// firstNameElm, err := page.Element("input[name='firstName']")
+	// if err != nil {
+	// 	return nil, err
+	// }
+	// lastNameElm, err := page.Element("input[name='lastName']")
+	// if err != nil {
+	// 	return nil, err
+	// }
+	// for _, v := range firstName {
+	// 	firstNameElm.MustType(Key(v))
+	// }
+	// for _, v := range lastName {
+	// 	lastNameElm.MustType(Key(v))
+	// }
+	// lastNameElm.MustType(Enter)
+	// err = page.WaitDOMStable(waitDur, .2)
+	// if err != nil {
+	// 	return nil, err
+	// }
+	// log.Println("Got page ", page.MustInfo().Title)
+	// profileUrl := fmt.Sprintf("https://www.linkedin.com/in/%s?trk=people-guest_people_search-card", profileAlias)
+	// profileLink, err := page.Element(fmt.Sprintf("a[href='%s']", profileUrl))
+	// if err != nil {
+	// 	return nil, err
+	// }
+	// profileLink.MustType(Enter)
+	// err = page.WaitDOMStable(waitDur, .2)
+	// if err != nil {
+	// 	return nil, err
+	// }
+	// log.Println("Got page ", page.MustInfo().Title)
 	return page, nil
 }
 
-func (r *LinkedIn) RetrieveProfile(firstName string, lastName string, profileAlias string) (*LinkedInProfile, error) {
-	page, err := r.navigateToProfilePage(firstName, lastName, profileAlias)
+func (r *LinkedInBrowser) RetrieveProfile(email string, password string) (*LinkedInProfile, error) {
+	page, err := r.navigateToProfilePage(email, password)
 	if err != nil {
 		return nil, err
 	}
@@ -182,7 +204,7 @@ func ExtractExperienceList(page *rod.Page) ([]*LinkedInExperience, error) {
 }
 
 func ExtractExperience(element *rod.Element) (*LinkedInExperience, error) {
-	titleE, err := element.Element(".experience-item__subtitle")
+	titleE, err := element.Element(".profile-section-card__subtitle")
 	if err != nil {
 		return nil, err
 	}
@@ -227,7 +249,12 @@ func ExtractPositions(element *rod.Element) ([]*LinkedInPosition, error) {
 }
 
 func ExtractPosition(element *rod.Element) (*LinkedInPosition, error) {
-	titleE, err := element.Element(".experience-item__title")
+	class, err := element.Attribute("class")
+	if err != nil {
+		return nil, err
+	}
+	isGroup := strings.Contains(*class, "experience-group")
+	titleE, err := element.Element(".profile-section-card__title")
 	if err != nil {
 		return nil, err
 	}
@@ -235,13 +262,20 @@ func ExtractPosition(element *rod.Element) (*LinkedInPosition, error) {
 	if err != nil {
 		return nil, err
 	}
-	metaElements, err := element.Elements(".experience-item__meta-item")
+	locationXPath := ".experience-item__location"
+	if isGroup {
+		locationXPath = ".experience-group-position__location"
+	}
+	locationElements, err := element.Elements(locationXPath)
 	if err != nil {
 		return nil, err
 	}
-	location, err := metaElements[1].Text()
-	if err != nil {
-		return nil, err
+	location := ""
+	if len(locationElements) > 0 {
+		location, err = locationElements[0].Text()
+		if err != nil {
+			return nil, err
+		}
 	}
 	start, end, err := ExtractStartEndDates(element)
 	if err != nil {

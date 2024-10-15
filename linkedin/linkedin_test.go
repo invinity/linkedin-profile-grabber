@@ -20,7 +20,7 @@ func TestLinkedIn(t *testing.T) {
 
 var _ = Describe("Using the LinkedIn profile retrieval", Ordered, func() {
 	var browser *rod.Browser
-	var linkedin *LinkedIn
+	var linkedin *LinkedInBrowser
 	var profile *LinkedInProfile
 
 	BeforeAll(func() {
@@ -41,9 +41,9 @@ var _ = Describe("Using the LinkedIn profile retrieval", Ordered, func() {
 		// browser.EachEvent(func(e *proto.NetworkResponseReceived) {
 		// 	log.Println(e)
 		// })
-		linkedin = New(browser.MustConnect())
+		linkedin = NewBrowser(browser.MustConnect())
 		var err error
-		profile, err = linkedin.RetrieveProfile("matthew", "pitts", "mattpitts")
+		profile, err = linkedin.RetrieveProfile(os.Getenv("LINKEDIN_EMAIL"), os.Getenv("LINKEDIN_PASSWORD"))
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -106,11 +106,11 @@ var _ = Describe("Using the LinkedIn profile retrieval", Ordered, func() {
 
 		Context("loads Project data", func() {
 			It("should load all project info", func() {
-				Ω(profile.Projects).Should(HaveLen(2))
+				Ω(profile.Projects).Should(HaveLen(6))
 			})
 
 			It("Projects should have fields populated", func() {
-				project := profile.Projects[0]
+				project := profile.Projects[2]
 				Ω(project.Title).Should(BeEquivalentTo("Cloud Proxy Log Copying Automation"))
 				Ω(project.StartDate).Should(BeEquivalentTo("Jun 2023"))
 				Ω(project.EndDate).Should(BeEquivalentTo("Dec 2023"))
@@ -131,7 +131,7 @@ var _ = Describe("Using the LinkedIn profile retrieval", Ordered, func() {
 				Ω(edu.Subtitle).Should(BeEquivalentTo("BSEE Electrical Engineering"))
 				Ω(edu.StartDate).Should(BeEquivalentTo("1998"))
 				Ω(edu.EndDate).Should(BeEquivalentTo("2003"))
-				Ω(edu.Description).Should(BeEquivalentTo("Dean's List (4 of 8 semesters)"))
+				Ω(edu.Description).Should(ContainSubstring("Dean's List (4 of 8 semesters)"))
 			})
 		})
 

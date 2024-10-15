@@ -41,9 +41,13 @@ var _ = Describe("Using the LinkedIn profile retrieval", Ordered, func() {
 		// browser.EachEvent(func(e *proto.NetworkResponseReceived) {
 		// 	log.Println(e)
 		// })
+		linkedinEmail, linkedinPassword := os.Getenv("LINKEDIN_EMAIL"), os.Getenv("LINKEDIN_PASSWORD")
+		if linkedinEmail == "" || linkedinPassword == "" {
+			log.Panic("Need linkedin credentials passed in via env vars LINKEDIN_EMAIL and LINKEDIN_PASSWORD")
+		}
 		linkedin = NewBrowser(browser.MustConnect())
 		var err error
-		profile, err = linkedin.RetrieveProfile(os.Getenv("LINKEDIN_EMAIL"), os.Getenv("LINKEDIN_PASSWORD"))
+		profile, err = linkedin.RetrieveProfile(linkedinEmail, linkedinPassword)
 		if err != nil {
 			log.Fatal(err)
 		}

@@ -82,6 +82,7 @@ func (r *LinkedInBrowser) navigateToProfilePage(email string, password string) (
 	}
 	for _, v := range email {
 		usernameInput.MustType(Key(v))
+		time.Sleep(time.Second * 1)
 	}
 	passwordInput, err := page.Element("input[id=password]")
 	if err != nil {
@@ -89,6 +90,7 @@ func (r *LinkedInBrowser) navigateToProfilePage(email string, password string) (
 	}
 	for _, v := range password {
 		passwordInput.MustType(Key(v))
+		time.Sleep(time.Second * 1)
 	}
 	passwordInput.MustType(Enter)
 	err = page.WaitDOMStable(waitDur, .2)

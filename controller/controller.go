@@ -20,8 +20,8 @@ type Controller struct {
 	lock         sync.Mutex
 }
 
-func New(browser *rod.Browser) *Controller {
-	return &Controller{linkedinInst: linkedin.NewBrowser(browser), cache: memoize.NewMemoizer(60*time.Minute, 5*time.Minute), lock: sync.Mutex{}}
+func NewController(browser *rod.Browser, cache *memoize.Memoizer) *Controller {
+	return &Controller{linkedinInst: linkedin.NewBrowser(browser), cache: cache, lock: sync.Mutex{}}
 }
 
 func (r *Controller) GetLinkedInProfile(w http.ResponseWriter, req *http.Request) {

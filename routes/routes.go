@@ -6,14 +6,15 @@ import (
 	"github.com/go-rod/rod"
 	"github.com/gorilla/mux"
 	"github.com/invinity/linkedin-profile-grabber/controller"
+	"github.com/kofalt/go-memoize"
 )
 
-func AppRoutes(browser *rod.Browser) *mux.Router {
+func AppRoutes(browser *rod.Browser, cache *memoize.Memoizer) *mux.Router {
 	var router = mux.NewRouter()
 	router = mux.NewRouter().StrictSlash(true)
 
 	//Other Routes
-	contInst := controller.New(browser)
+	contInst := controller.NewController(browser, cache)
 	router.HandleFunc("/api/linkedin/profile", contInst.GetLinkedInProfile).Methods(http.MethodGet)
 	router.HandleFunc("/api/linkedin/profile", ProvideOptions).Methods(http.MethodOptions)
 

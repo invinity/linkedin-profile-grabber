@@ -47,7 +47,8 @@ var _ = Describe("Using the LinkedIn profile retrieval", Ordered, func() {
 		}
 		linkedin = NewBrowser(browser.MustConnect())
 		var err error
-		profile, err = linkedin.RetrieveProfile(linkedinEmail, linkedinPassword)
+		profile, err = linkedin.RetrieveProfileViaLogin(linkedinEmail, linkedinPassword)
+		// profile, err = linkedin.RetrieveProfileViaSearch("matthew", "pitts", "mattpitts")
 		if err != nil {
 			log.Fatal(err)
 		}

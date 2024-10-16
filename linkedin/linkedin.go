@@ -1,6 +1,8 @@
 package linkedin
 
 import (
+	"errors"
+	"fmt"
 	"log"
 	"strings"
 	"time"
@@ -65,7 +67,23 @@ type LinkedInCertification struct {
 	ExpiresOn   string
 }
 
-func (r *LinkedInBrowser) navigateToProfilePage(email string, password string) (*rod.Page, error) {
+func (r *LinkedInBrowser) RetrieveProfileViaSearch(firstName string, lastName string, profileAlias string) (*LinkedInProfile, error) {
+	page, err := r.navigateToProfilePageViaSearch(firstName, lastName, profileAlias)
+	if err != nil {
+		return nil, err
+	}
+	return r.extractProfileData(page)
+}
+
+func (r *LinkedInBrowser) RetrieveProfileViaLogin(email string, password string) (*LinkedInProfile, error) {
+	page, err := r.navigateToProfilePageViaLogin(email, password)
+	if err != nil {
+		return nil, err
+	}
+	return r.extractProfileData(page)
+}
+
+func (r *LinkedInBrowser) navigateToProfilePageViaLogin(email string, password string) (*rod.Page, error) {
 	page, err := r.performLinkedInLogin(email, password)
 	if err != nil {
 		return nil, err
@@ -80,40 +98,6 @@ func (r *LinkedInBrowser) navigateToProfilePage(email string, password string) (
 	}
 	title := page.MustInfo().Title
 	log.Println("Got page ", title)
-	// if !strings.HasPrefix(title, "Search for people") {
-	// 	return nil, errors.New("Unexpected page: " + title)
-	// }
-	// firstNameElm, err := page.Element("input[name='firstName']")
-	// if err != nil {
-	// 	return nil, err
-	// }
-	// lastNameElm, err := page.Element("input[name='lastName']")
-	// if err != nil {
-	// 	return nil, err
-	// }
-	// for _, v := range firstName {
-	// 	firstNameElm.MustType(Key(v))
-	// }
-	// for _, v := range lastName {
-	// 	lastNameElm.MustType(Key(v))
-	// }
-	// lastNameElm.MustType(Enter)
-	// err = page.WaitDOMStable(waitDur, .2)
-	// if err != nil {
-	// 	return nil, err
-	// }
-	// log.Println("Got page ", page.MustInfo().Title)
-	// profileUrl := fmt.Sprintf("https://www.linkedin.com/in/%s?trk=people-guest_people_search-card", profileAlias)
-	// profileLink, err := page.Element(fmt.Sprintf("a[href='%s']", profileUrl))
-	// if err != nil {
-	// 	return nil, err
-	// }
-	// profileLink.MustType(Enter)
-	// err = page.WaitDOMStable(waitDur, .2)
-	// if err != nil {
-	// 	return nil, err
-	// }
-	// log.Println("Got page ", page.MustInfo().Title)
 	return page, nil
 }
 
@@ -150,35 +134,82 @@ func (r *LinkedInBrowser) performLinkedInLogin(email string, password string) (*
 	if err != nil {
 		return nil, err
 	}
-	err = r.handleNextPage(page)
-	if err != nil {
-		return nil, err
-	}
-	return page, nil
-}
-
-func (r *LinkedInBrowser) handleNextPage(page *rod.Page) error {
 	title := page.MustInfo().Title
-	var err error
-	log.Println("Got page ", title)
-	waitDur := 2 * time.Second
 	if strings.Contains(title, "Security Verification") {
 		log.Println("Got Security Verification page, sleeping for a bit")
 		time.Sleep(10 * time.Second)
 	}
 	err = page.WaitDOMStable(waitDur, .2)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	return nil
+	return page, nil
 }
 
-func (r *LinkedInBrowser) RetrieveProfile(email string, password string) (*LinkedInProfile, error) {
-	page, err := r.navigateToProfilePage(email, password)
+func (r *LinkedInBrowser) navigateToProfilePageViaSearch(firstName string, lastName string, profileAlias string) (*rod.Page, error) {
+	typeDelay := 200 * time.Millisecond
+	page, err := r.browser.Page(proto.TargetCreateTarget{URL: "https://www.linkedin.com"})
 	if err != nil {
 		return nil, err
 	}
-	_, err = page.Element("body")
+	waitDur, _ := time.ParseDuration("2s")
+	err = page.WaitDOMStable(waitDur, .2)
+	if err != nil {
+		return nil, err
+	}
+	log.Println("Got page ", page.MustInfo().Title)
+	peopleLink, err := page.Element("a[data-tracking-control-name='guest_homepage-basic_guest_nav_menu_people']")
+	if err != nil {
+		return nil, err
+	}
+	peopleLink.MustType(Enter)
+	err = page.WaitDOMStable(waitDur, .2)
+	if err != nil {
+		return nil, err
+	}
+	title := page.MustInfo().Title
+	log.Println("Got page ", title)
+	if !strings.HasPrefix(title, "Search for people") {
+		return nil, errors.New("Unexpected page: " + title)
+	}
+	firstNameElm, err := page.Element("input[name='firstName']")
+	if err != nil {
+		return nil, err
+	}
+	lastNameElm, err := page.Element("input[name='lastName']")
+	if err != nil {
+		return nil, err
+	}
+	for _, v := range firstName {
+		firstNameElm.MustType(Key(v))
+		time.Sleep(typeDelay)
+	}
+	for _, v := range lastName {
+		lastNameElm.MustType(Key(v))
+		time.Sleep(typeDelay)
+	}
+	lastNameElm.MustType(Enter)
+	err = page.WaitDOMStable(waitDur, .2)
+	if err != nil {
+		return nil, err
+	}
+	log.Println("Got page ", page.MustInfo().Title)
+	profileUrl := fmt.Sprintf("https://www.linkedin.com/in/%s?trk=people-guest_people_search-card", profileAlias)
+	profileLink, err := page.Element(fmt.Sprintf("a[href='%s']", profileUrl))
+	if err != nil {
+		return nil, err
+	}
+	profileLink.MustType(Enter)
+	err = page.WaitDOMStable(waitDur, .2)
+	if err != nil {
+		return nil, err
+	}
+	log.Println("Got page ", page.MustInfo().Title)
+	return page, nil
+}
+
+func (r *LinkedInBrowser) extractProfileData(page *rod.Page) (*LinkedInProfile, error) {
+	_, err := page.Element("body")
 	if err != nil {
 		return nil, err
 	}

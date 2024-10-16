@@ -135,13 +135,13 @@ func (r *LinkedInBrowser) performLinkedInLogin(email string, password string) (*
 		return nil, err
 	}
 	title := page.MustInfo().Title
+	log.Println("Arrived at page after login: ", title)
 	if strings.Contains(title, "Security Verification") {
 		log.Println("Got Security Verification page, sleeping for a bit")
 		time.Sleep(10 * time.Second)
 	}
-	err = page.WaitDOMStable(waitDur, .2)
-	if err != nil {
-		return nil, err
+	if !strings.Contains(title, "Feed") {
+		return nil, errors.New("Expected to get feed page after login, but was " + title)
 	}
 	return page, nil
 }

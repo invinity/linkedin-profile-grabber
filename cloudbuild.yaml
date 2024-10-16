@@ -23,7 +23,7 @@ steps:
   - name: 'gcr.io/cloud-builders/gcloud'
     args: ['run', 'deploy', 'linkedin-profile-grabber', 
            '--image=gcr.io/${PROJECT_ID}/${REPO_NAME}/linkedin-profile-grabber:${SHORT_SHA}', 
-           '--region', 'us-central1', '--platform', 'managed']
+           '--region', 'us-east1', '--platform', 'managed']
 
 # Save test logs to Google Cloud Storage
 # artifacts:

@@ -18,7 +18,7 @@ func main() {
 		log.Fatal("Did not find chrome in go-rod standard locations")
 	}
 	log.Printf("Using detected chrome path: %s\n", path)
-	browser := rod.New().ControlURL(launcher.New().Leakless(false).NoSandbox(true).Headless(true).Bin(path).MustLaunch()).Timeout(timeout).Trace(true).MustConnect()
+	browser := rod.New().ControlURL(launcher.New().Leakless(false).NoSandbox(true).Headless(false).Bin(path).KeepUserDataDir().MustLaunch()).Timeout(timeout).Trace(true).MustConnect()
 	defer browser.MustClose()
 	router := routes.AppRoutes(browser)
 	http.Handle("/api", router)

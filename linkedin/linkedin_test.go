@@ -37,18 +37,22 @@ var _ = Describe("Using the LinkedIn profile retrieval", Ordered, func() {
 		} else {
 			log.Fatal("Unable to find path to chrome")
 		}
-		browser = rod.New().ControlURL(launcher.New().Leakless(false).NoSandbox(nosandbox).Headless(true).Bin(chromePath).MustLaunch()).Trace(true).Timeout(timeout)
+		browser = rod.New().ControlURL(launcher.New().Leakless(false).NoSandbox(nosandbox).Headless(false).Bin(chromePath).MustLaunch()).Trace(true).Timeout(timeout)
 		// browser.EachEvent(func(e *proto.NetworkResponseReceived) {
 		// 	log.Println(e)
 		// })
 		linkedinEmail, linkedinPassword := os.Getenv("LINKEDIN_EMAIL"), os.Getenv("LINKEDIN_PASSWORD")
-		if linkedinEmail == "" || linkedinPassword == "" {
-			log.Panic("Need linkedin credentials passed in via env vars LINKEDIN_EMAIL and LINKEDIN_PASSWORD")
-		}
+		googleEmail, googlePassword := os.Getenv("GOOGLE_EMAIL"), os.Getenv("GOOGLE_PASSWORD")
 		linkedin = NewBrowser(browser.MustConnect())
 		var err error
-		profile, err = linkedin.RetrieveProfileViaLogin(linkedinEmail, linkedinPassword)
-		// profile, err = linkedin.RetrieveProfileViaSearch("matthew", "pitts", "mattpitts")
+		if linkedinEmail != "" && linkedinPassword != "" {
+			profile, err = linkedin.RetrieveProfileViaLogin(linkedinEmail, linkedinPassword)
+		} else if googleEmail != "" && googlePassword != "" {
+			profile, err = linkedin.RetrieveProfileViaGoogleLogin(googleEmail, googlePassword)
+		} else {
+			profile, err = linkedin.RetrieveProfileViaSearch("matthew", "pitts", "mattpitts")
+		}
+
 		if err != nil {
 			log.Fatal(err)
 		}

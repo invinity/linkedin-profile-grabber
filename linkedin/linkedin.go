@@ -83,6 +83,14 @@ func (r *LinkedInBrowser) RetrieveProfileViaLogin(email string, password string)
 	return r.extractProfileData(page)
 }
 
+func (r *LinkedInBrowser) RetrieveProfileViaGoogleLogin(email string, password string) (*LinkedInProfile, error) {
+	page, err := r.navigateToProfilePageViaGoogleLogin(email, password)
+	if err != nil {
+		return nil, err
+	}
+	return r.extractProfileData(page)
+}
+
 func (r *LinkedInBrowser) navigateToProfilePageViaLogin(email string, password string) (*rod.Page, error) {
 	page, err := r.performLinkedInLogin(email, password)
 	if err != nil {
@@ -115,7 +123,7 @@ func (r *LinkedInBrowser) performLinkedInLogin(email string, password string) (*
 	}
 
 	if page == nil {
-		return nil, fmt.Errorf("Unable to login into Linkedin after %d attempts", attempt)
+		return nil, fmt.Errorf("unable to login into Linkedin after %d attempts", attempt)
 	}
 
 	return page, nil
@@ -168,6 +176,85 @@ func (r *LinkedInBrowser) attemptLinkedInLogin(email string, password string) (*
 	if !strings.Contains(title, "Feed") {
 		return nil, errors.New("Expected to get feed page after login, but was " + title)
 	}
+	return page, nil
+}
+
+func (r *LinkedInBrowser) navigateToProfilePageViaGoogleLogin(email string, password string) (*rod.Page, error) {
+	page, err := r.browser.Page(proto.TargetCreateTarget{URL: "https://www.linkedin.com/login"})
+	if err != nil {
+		return nil, err
+	}
+	typeDur := 200 * time.Millisecond
+	waitDur := 2 * time.Second
+	err = page.WaitDOMStable(waitDur, .2)
+	if err != nil {
+		return nil, err
+	}
+	log.Println("Got page ", page.MustInfo().Title)
+	spans, err := page.Elements("div[id=container] span")
+	if err != nil {
+		return nil, err
+	}
+	var googleLogin *rod.Element
+	for _, v := range spans {
+		innerText := v.MustText()
+		if innerText == "Continue with Google" {
+			googleLogin = v
+			break
+		}
+	}
+	if googleLogin == nil {
+		return nil, errors.New("unable to find google login element")
+	}
+	googleLogin.Click(proto.InputMouseButtonLeft, 1)
+	pages, err := r.browser.Pages()
+	if err != nil {
+		return nil, err
+	}
+	googleLoginPage, err := pages.FindByURL("google\\.com")
+	if err != nil {
+		return nil, err
+	}
+	err = googleLoginPage.WaitDOMStable(waitDur, .2)
+	if err != nil {
+		return nil, err
+	}
+	usernameInput, err := googleLoginPage.Element("input[id=identifierId]")
+	if err != nil {
+		return nil, err
+	}
+	for _, v := range email {
+		usernameInput.MustType(Key(v))
+		time.Sleep(typeDur)
+	}
+	usernameInput.MustType(Enter)
+	err = googleLoginPage.WaitDOMStable(waitDur, .2)
+	if err != nil {
+		return nil, err
+	}
+	passwordInput, err := googleLoginPage.Element("input[name=Passwd]")
+	if err != nil {
+		return nil, err
+	}
+	for _, v := range password {
+		passwordInput.MustType(Key(v))
+		time.Sleep(typeDur)
+	}
+	passwordInput.MustType(Enter)
+	err = page.WaitDOMStable(waitDur, .2)
+	if err != nil {
+		return nil, err
+	}
+	err = page.Navigate("https://www.linkedin.com/public-profile/settings?trk=d_flagship3_profile_self_view_public_profile")
+	if err != nil {
+		return nil, err
+	}
+	err = page.WaitDOMStable(time.Second*3, .2)
+	if err != nil {
+		return nil, err
+	}
+	title := page.MustInfo().Title
+	log.Println("Got page ", title)
 	return page, nil
 }
 
@@ -290,11 +377,11 @@ func ExtractExperienceList(page *rod.Page) ([]*LinkedInExperience, error) {
 }
 
 func ExtractExperience(element *rod.Element) (*LinkedInExperience, error) {
-	titleE, err := element.Element(".profile-section-card__subtitle")
+	titleElements, err := element.Elements(".profile-section-card__subtitle,.experience-item__subtitle")
 	if err != nil {
 		return nil, err
 	}
-	title, err := titleE.Text()
+	title, err := titleElements[0].Text()
 	if err != nil {
 		return nil, err
 	}
@@ -340,11 +427,15 @@ func ExtractPosition(element *rod.Element) (*LinkedInPosition, error) {
 		return nil, err
 	}
 	isGroup := strings.Contains(*class, "experience-group")
-	titleE, err := element.Element(".profile-section-card__title")
+	titleElements, err := element.Elements(".profile-section-card__title,.experience-item__title")
 	if err != nil {
 		return nil, err
 	}
-	title, err := titleE.Text()
+	title, err := titleElements[0].Text()
+	if err != nil {
+		return nil, err
+	}
+	metaElements, err := element.Elements(".experience-item__meta-item")
 	if err != nil {
 		return nil, err
 	}
@@ -359,6 +450,11 @@ func ExtractPosition(element *rod.Element) (*LinkedInPosition, error) {
 	location := ""
 	if len(locationElements) > 0 {
 		location, err = locationElements[0].Text()
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		location, err = metaElements[1].Text()
 		if err != nil {
 			return nil, err
 		}

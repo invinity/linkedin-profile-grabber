@@ -37,7 +37,7 @@ func createBrowser() *rod.Browser {
 		log.Fatal("Did not find chrome in go-rod standard locations")
 	}
 	log.Printf("Using detected chrome path: %s\n", path)
-	return rod.New().ControlURL(launcher.New().Leakless(false).NoSandbox(true).Headless(true).Bin(path).KeepUserDataDir().MustLaunch()).Timeout(timeout).Trace(true).MustConnect()
+	return rod.New().ControlURL(launcher.New().Leakless(false).NoSandbox(true).Headless(true).Bin(path).MustLaunch()).Timeout(timeout).Trace(true).MustConnect()
 }
 
 func createCache() *memoize.Memoizer {

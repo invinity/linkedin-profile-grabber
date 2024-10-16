@@ -66,43 +66,15 @@ type LinkedInCertification struct {
 }
 
 func (r *LinkedInBrowser) navigateToProfilePage(email string, password string) (*rod.Page, error) {
-	page, err := r.browser.Page(proto.TargetCreateTarget{URL: "https://www.linkedin.com/login?fromSignIn=true&trk=guest_homepage-basic_nav-header-signin"})
+	page, err := r.performLinkedInLogin(email, password)
 	if err != nil {
 		return nil, err
 	}
-	waitDur, _ := time.ParseDuration("2s")
-	err = page.WaitDOMStable(waitDur, .2)
-	if err != nil {
-		return nil, err
-	}
-	log.Println("Got page ", page.MustInfo().Title)
-	usernameInput, err := page.Element("input[id=username]")
-	if err != nil {
-		return nil, err
-	}
-	for _, v := range email {
-		usernameInput.MustType(Key(v))
-		time.Sleep(time.Second * 1)
-	}
-	passwordInput, err := page.Element("input[id=password]")
-	if err != nil {
-		return nil, err
-	}
-	for _, v := range password {
-		passwordInput.MustType(Key(v))
-		time.Sleep(time.Second * 1)
-	}
-	passwordInput.MustType(Enter)
-	err = page.WaitDOMStable(waitDur, .2)
-	if err != nil {
-		return nil, err
-	}
-	log.Println("Got page ", page.MustInfo().Title)
 	err = page.Navigate("https://www.linkedin.com/public-profile/settings?trk=d_flagship3_profile_self_view_public_profile")
 	if err != nil {
 		return nil, err
 	}
-	err = page.WaitDOMStable(waitDur, .2)
+	err = page.WaitDOMStable(time.Second*3, .2)
 	if err != nil {
 		return nil, err
 	}
@@ -143,6 +115,62 @@ func (r *LinkedInBrowser) navigateToProfilePage(email string, password string) (
 	// }
 	// log.Println("Got page ", page.MustInfo().Title)
 	return page, nil
+}
+
+func (r *LinkedInBrowser) performLinkedInLogin(email string, password string) (*rod.Page, error) {
+	page, err := r.browser.Page(proto.TargetCreateTarget{URL: "https://www.linkedin.com/login"})
+	if err != nil {
+		return nil, err
+	}
+	typeDur := 200 * time.Millisecond
+	waitDur := 2 * time.Second
+	err = page.WaitDOMStable(waitDur, .2)
+	if err != nil {
+		return nil, err
+	}
+	log.Println("Got page ", page.MustInfo().Title)
+	usernameInput, err := page.Element("input[id=username]")
+	if err != nil {
+		return nil, err
+	}
+	for _, v := range email {
+		usernameInput.MustType(Key(v))
+		time.Sleep(typeDur)
+	}
+	passwordInput, err := page.Element("input[id=password]")
+	if err != nil {
+		return nil, err
+	}
+	for _, v := range password {
+		passwordInput.MustType(Key(v))
+		time.Sleep(typeDur)
+	}
+	passwordInput.MustType(Enter)
+	err = page.WaitDOMStable(waitDur, .2)
+	if err != nil {
+		return nil, err
+	}
+	err = r.handleNextPage(page)
+	if err != nil {
+		return nil, err
+	}
+	return page, nil
+}
+
+func (r *LinkedInBrowser) handleNextPage(page *rod.Page) error {
+	title := page.MustInfo().Title
+	var err error
+	log.Println("Got page ", title)
+	waitDur := 2 * time.Second
+	if strings.Contains(title, "Security Verification") {
+		log.Println("Got Security Verification page, sleeping for a bit")
+		time.Sleep(10 * time.Second)
+	}
+	err = page.WaitDOMStable(waitDur, .2)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (r *LinkedInBrowser) RetrieveProfile(email string, password string) (*LinkedInProfile, error) {

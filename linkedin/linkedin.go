@@ -102,6 +102,26 @@ func (r *LinkedInBrowser) navigateToProfilePageViaLogin(email string, password s
 }
 
 func (r *LinkedInBrowser) performLinkedInLogin(email string, password string) (*rod.Page, error) {
+	attempt := 0
+	var page *rod.Page
+	var err error
+	for (page == nil || !strings.Contains(page.MustInfo().Title, "Feed")) && attempt <= 10 {
+		attempt += 1
+		log.Println("Not yet at a logged in page, performing login attempt", attempt)
+		page, err = r.attemptLinkedInLogin(email, password)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if page == nil {
+		return nil, fmt.Errorf("Unable to login into Linkedin after %d attempts", attempt)
+	}
+
+	return page, nil
+}
+
+func (r *LinkedInBrowser) attemptLinkedInLogin(email string, password string) (*rod.Page, error) {
 	page, err := r.browser.Page(proto.TargetCreateTarget{URL: "https://www.linkedin.com/login"})
 	if err != nil {
 		return nil, err
@@ -139,7 +159,12 @@ func (r *LinkedInBrowser) performLinkedInLogin(email string, password string) (*
 	if strings.Contains(title, "Security Verification") {
 		log.Println("Got Security Verification page, sleeping for a bit")
 		time.Sleep(10 * time.Second)
+		err = page.WaitDOMStable(waitDur, .2)
+		if err != nil {
+			return nil, err
+		}
 	}
+	title = page.MustInfo().Title
 	if !strings.Contains(title, "Feed") {
 		return nil, errors.New("Expected to get feed page after login, but was " + title)
 	}

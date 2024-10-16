@@ -54,7 +54,7 @@ func (r *Controller) retrieveProfile() (*linkedin.LinkedInProfile, error) {
 	defer r.lock.Unlock()
 	email, password := os.Getenv("LINKEDIN_EMAIL"), os.Getenv("LINKEDIN_PASSWORD")
 	if email != "" && password != "" {
-		return r.linkedinInst.RetrieveProfileViaLogin()
+		return r.linkedinInst.RetrieveProfileViaLogin(email, password)
 	} else {
 		return r.linkedinInst.RetrieveProfileViaSearch("matthew", "pitts", "mattpitts")
 	}

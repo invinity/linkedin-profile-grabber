@@ -21,6 +21,7 @@ type LinkedInBrowser struct {
 }
 
 type LinkedInProfile struct {
+	GeneratedAt    time.Time
 	Name           string
 	Headline       string
 	Summary        string
@@ -365,7 +366,7 @@ func (r *LinkedInBrowser) extractProfileData(page *rod.Page) (*LinkedInProfile, 
 	if err != nil {
 		return nil, err
 	}
-	return &LinkedInProfile{Name: name, Headline: headline, Summary: summary, Experience: experience, Education: education, Projects: projects, Certifications: certifications}, nil
+	return &LinkedInProfile{GeneratedAt: time.Now().UTC(), Name: name, Headline: headline, Summary: summary, Experience: experience, Education: education, Projects: projects, Certifications: certifications}, nil
 }
 
 func ExtractExperienceList(page *rod.Page) ([]*LinkedInExperience, error) {

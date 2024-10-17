@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"log"
 	"net/http"
 	"os"
@@ -8,6 +9,7 @@ import (
 
 	"github.com/go-rod/rod"
 	"github.com/go-rod/rod/lib/launcher"
+	"github.com/invinity/linkedin-profile-grabber/cache"
 	"github.com/invinity/linkedin-profile-grabber/routes"
 	"github.com/kofalt/go-memoize"
 )
@@ -15,7 +17,11 @@ import (
 func main() {
 	browser := createBrowser()
 	defer browser.MustClose()
-	cache := createCache()
+	cache, err := createCache()
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer cache.Close()
 	router := routes.AppRoutes(browser, cache)
 	http.Handle("/api", router)
 
@@ -40,7 +46,12 @@ func createBrowser() *rod.Browser {
 	return rod.New().ControlURL(launcher.New().Leakless(false).NoSandbox(true).Headless(true).Bin(path).MustLaunch()).Timeout(timeout).Trace(true).MustConnect()
 }
 
-func createCache() *memoize.Memoizer {
+func createCache() (*cache.Cache, error) {
+	ctx := context.Background()
+	return cache.NewCache(&ctx, "linkedin-profile-grabber")
+}
+
+func createMemozier() *memoize.Memoizer {
 	cacheTime := os.Getenv("CACHE_TIME")
 	if cacheTime == "" {
 		cacheTime = "4h"

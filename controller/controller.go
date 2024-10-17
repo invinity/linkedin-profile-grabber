@@ -10,17 +10,17 @@ import (
 	"time"
 
 	"github.com/go-rod/rod"
+	"github.com/invinity/linkedin-profile-grabber/cache"
 	"github.com/invinity/linkedin-profile-grabber/linkedin"
-	"github.com/kofalt/go-memoize"
 )
 
 type Controller struct {
 	linkedinInst *linkedin.LinkedInBrowser
-	cache        *memoize.Memoizer
+	cache        *cache.Cache
 	lock         sync.Mutex
 }
 
-func NewController(browser *rod.Browser, cache *memoize.Memoizer) *Controller {
+func NewController(browser *rod.Browser, cache *cache.Cache) *Controller {
 	return &Controller{linkedinInst: linkedin.NewBrowser(browser), cache: cache, lock: sync.Mutex{}}
 }
 
@@ -39,14 +39,36 @@ func (r *Controller) GetLinkedInProfile(w http.ResponseWriter, req *http.Request
 }
 
 func (r *Controller) getProfile() (*linkedin.LinkedInProfile, error) {
-	profile, err, cached := memoize.Call(r.cache, "profile", r.retrieveProfile)
+	var storedProfile *linkedin.LinkedInProfile
+	err := r.cache.Get("myprofile", &storedProfile)
 	if err != nil {
-		return nil, err
+		log.Println("error during profile fetch from bucket", err)
 	}
-	if cached {
-		log.Println("Using cached Profile")
+	var age time.Duration
+	if storedProfile != nil {
+		age = time.Since(storedProfile.GeneratedAt)
 	}
-	return profile, nil
+
+	if storedProfile == nil || age >= 4*time.Hour {
+		log.Println("Stored profile data is too old or empty, attempting to retrieve fresh data.")
+		storedProfile, err = r.retrieveProfile()
+		if err != nil {
+			log.Println("error during linked in profile retrieval", err)
+			if storedProfile != nil {
+				log.Println("stored profile was present, just returning that for now")
+				return storedProfile, nil
+			}
+			return nil, err
+		}
+		log.Println("storing profile for caching")
+		err = r.cache.Put("myprofile", storedProfile)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		log.Println("using cached profile copy")
+	}
+	return storedProfile, nil
 }
 
 func (r *Controller) retrieveProfile() (*linkedin.LinkedInProfile, error) {

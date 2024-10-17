@@ -5,11 +5,11 @@ import (
 
 	"github.com/go-rod/rod"
 	"github.com/gorilla/mux"
+	"github.com/invinity/linkedin-profile-grabber/cache"
 	"github.com/invinity/linkedin-profile-grabber/controller"
-	"github.com/kofalt/go-memoize"
 )
 
-func AppRoutes(browser *rod.Browser, cache *memoize.Memoizer) *mux.Router {
+func AppRoutes(browser *rod.Browser, cache *cache.Cache) *mux.Router {
 	var router = mux.NewRouter()
 	router = mux.NewRouter().StrictSlash(true)
 

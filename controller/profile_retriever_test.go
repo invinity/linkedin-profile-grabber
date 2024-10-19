@@ -70,7 +70,7 @@ var _ = Describe("Using the profile retrieval", Ordered, func() {
 			testCache := NewTestCache()
 			testCache.Put("thing", cachedProfile)
 			testRetriever := NewTestRetriever(nil, errors.New("unable to call linked in"))
-			underTest := NewRetriever(testCache, testRetriever)
+			underTest := NewCacheHandlingRetriever(testCache, testRetriever)
 			retrievedProfile, err := underTest.Get()
 			It("should return the cached copy", func() {
 				Ω(retrievedProfile).Should(BeEquivalentTo(&cachedProfile))
@@ -85,7 +85,7 @@ var _ = Describe("Using the profile retrieval", Ordered, func() {
 			freshProfile := linkedin.LinkedInProfile{}
 			testCache := NewTestCache()
 			testRetriever := NewTestRetriever(&freshProfile, nil)
-			underTest := NewRetriever(testCache, testRetriever)
+			underTest := NewCacheHandlingRetriever(testCache, testRetriever)
 			retrievedProfile, err := underTest.Get()
 			It("should return the fresh copy", func() {
 				Ω(retrievedProfile).Should(BeEquivalentTo(&freshProfile))
@@ -102,7 +102,7 @@ var _ = Describe("Using the profile retrieval", Ordered, func() {
 			testCache := NewTestCache()
 			testCache.Put("thing", cachedProfile)
 			testRetriever := NewTestRetriever(&freshProfile, nil)
-			underTest := NewRetriever(testCache, testRetriever)
+			underTest := NewCacheHandlingRetriever(testCache, testRetriever)
 			retrievedProfile, err := underTest.Get()
 			It("should return the fresh copy", func() {
 				Ω(retrievedProfile).Should(BeEquivalentTo(&freshProfile))
@@ -116,7 +116,7 @@ var _ = Describe("Using the profile retrieval", Ordered, func() {
 		Context("cached copy is not present and linkedin call fails", func() {
 			testCache := NewTestCache()
 			testRetriever := NewTestRetriever(nil, errors.New("unable to call linked in"))
-			underTest := NewRetriever(testCache, testRetriever)
+			underTest := NewCacheHandlingRetriever(testCache, testRetriever)
 			retrievedProfile, err := underTest.Get()
 			It("should return a nil profile", func() {
 				Ω(retrievedProfile).Should(BeNil())

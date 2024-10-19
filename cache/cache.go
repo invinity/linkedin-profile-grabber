@@ -7,25 +7,32 @@ import (
 	"golang.org/x/net/context"
 )
 
-type Cache struct {
+type Cache interface {
+	Get(key string, value any) error
+	Put(key string, value any) error
+	Remove(key string) error
+	Close() error
+}
+
+type GoogleStorageCache struct {
 	ctx           *context.Context
 	storageClient *storage.Client
 	bucket        *storage.BucketHandle
 }
 
-func NewCache(ctx *context.Context, bucket string) (*Cache, error) {
+func NewGoogleStorageCache(ctx *context.Context, bucket string) (Cache, error) {
 	sc, err := storage.NewClient(*ctx)
 	if err != nil {
 		return nil, err
 	}
-	return &Cache{ctx: ctx, storageClient: sc, bucket: sc.Bucket(bucket)}, nil
+	return &GoogleStorageCache{ctx: ctx, storageClient: sc, bucket: sc.Bucket(bucket)}, nil
 }
 
-func (r *Cache) Close() error {
+func (r *GoogleStorageCache) Close() error {
 	return r.storageClient.Close()
 }
 
-func (r *Cache) Get(key string, value any) error {
+func (r *GoogleStorageCache) Get(key string, value any) error {
 	rc, err := r.bucket.Object(key).NewReader(*r.ctx)
 	if err != nil {
 		return err
@@ -34,12 +41,12 @@ func (r *Cache) Get(key string, value any) error {
 	return gob.NewDecoder(rc).Decode(value)
 }
 
-func (r *Cache) Put(key string, value any) error {
+func (r *GoogleStorageCache) Put(key string, value any) error {
 	rc := r.bucket.Object(key).NewWriter(*r.ctx)
 	defer rc.Close()
 	return gob.NewEncoder(rc).Encode(value)
 }
 
-func (r *Cache) Remove(key string) error {
+func (r *GoogleStorageCache) Remove(key string) error {
 	return r.bucket.Object(key).Delete(*r.ctx)
 }

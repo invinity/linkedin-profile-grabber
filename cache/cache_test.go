@@ -16,12 +16,12 @@ func TestCache(t *testing.T) {
 
 var _ = Describe("Using the LinkedIn profile retrieval", Ordered, func() {
 	var ctx context.Context
-	var underTest *Cache
+	var underTest Cache
 
 	BeforeAll(func() {
 		ctx = context.Background()
 		var err error
-		underTest, err = NewCache(&ctx, "linkedin-profile-grabber")
+		underTest, err = NewGoogleStorageCache(&ctx, "linkedin-profile-grabber")
 		if err != nil {
 			log.Panic(err)
 		}

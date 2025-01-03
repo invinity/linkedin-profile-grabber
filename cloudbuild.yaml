@@ -18,6 +18,9 @@ steps:
   # Docker push to Google Artifact Registry
   - name: 'gcr.io/cloud-builders/docker'
     args: ['push', 'gcr.io/${PROJECT_ID}/${REPO_NAME}/linkedin-profile-grabber:${SHORT_SHA}']
+
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['cp', 'coverage.out', '.']
   
   # Deploy to Cloud Run
   - name: 'gcr.io/cloud-builders/gcloud'

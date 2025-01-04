@@ -20,7 +20,7 @@ steps:
     args: ['push', 'gcr.io/${PROJECT_ID}/${REPO_NAME}/linkedin-profile-grabber:${SHORT_SHA}']
 
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['cp', 'coverage.out', '.']
+    args: ['cp', 'gcr.io/${PROJECT_ID}/${REPO_NAME}/linkedin-profile-grabber:${SHORT_SHA}:coverage.out', '.']
   
   # Deploy to Cloud Run
   - name: 'gcr.io/cloud-builders/gcloud'

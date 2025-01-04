@@ -27,7 +27,6 @@ RUN go get github.com/jstemmer/go-junit-report
 RUN go install github.com/Thatooine/go-test-html-report
 RUN go install github.com/jstemmer/go-junit-report
 RUN CGO_ENABLED=0 GOOS=linux go test -v -cover -coverprofile coverage.out -json ./... | go-junit-report
-COPY coverage.out .
 
 # Build the runtime container image from scratch, copying what is needed from the previous stage.  
 # https://docs.docker.com/develop/develop-images/multistage-build/#use-multi-stage-builds

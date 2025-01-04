@@ -1,7 +1,7 @@
 # Use the official Golang image to create a build artifact.
 # This is based on Debian and sets the GOPATH to /go.
 # https://hub.docker.com/_/golang
-FROM golang:alpine as build-stage
+FROM golang:alpine AS build-stage
 
 # Create and change to the app directory.
 WORKDIR /app
@@ -22,9 +22,11 @@ RUN apk add chromium
 RUN CGO_ENABLED=0 GOOS=linux go build -mod=readonly -v -o server
 
 FROM build-stage AS run-test-stage
+RUN go get github.com/Thatooine/go-test-html-report
+RUN go get github.com/jstemmer/go-junit-report
 RUN go install github.com/Thatooine/go-test-html-report
-RUN go install github.com/Thatooine/go-junit-report
-RUN CGO_ENABLED=0 GOOS=linux go test -v -cover -coverprofile coverage.out -json ./... | go-test-html-report
+RUN go install github.com/jstemmer/go-junit-report
+RUN CGO_ENABLED=0 GOOS=linux go test -v -cover -coverprofile coverage.out -json ./... | go-junit-report
 COPY coverage.out .
 
 # Build the runtime container image from scratch, copying what is needed from the previous stage.  

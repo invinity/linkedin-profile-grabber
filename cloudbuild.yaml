@@ -11,15 +11,15 @@ steps:
   #       2>&1 go test -timeout 1m -v ./... | /go/bin/go-junit-report -set-exit-code -iocopy -out ${SHORT_SHA}_test_log.xml
   
   # Docker Build
-  - name: 'gcr.io/cloud-builders/docker'
+  - name: 'docker'
     args: ['build', '-t', 
            'gcr.io/${PROJECT_ID}/${REPO_NAME}/linkedin-profile-grabber:${SHORT_SHA}', '.']
   
   # Docker push to Google Artifact Registry
-  - name: 'gcr.io/cloud-builders/docker'
+  - name: 'docker'
     args: ['push', 'gcr.io/${PROJECT_ID}/${REPO_NAME}/linkedin-profile-grabber:${SHORT_SHA}']
 
-  - name: 'gcr.io/cloud-builders/docker'
+  - name: 'docker'
     args: ['cp', 'gcr.io/${PROJECT_ID}/${REPO_NAME}/linkedin-profile-grabber:${SHORT_SHA}:coverage.out', '.']
   
   # Deploy to Cloud Run

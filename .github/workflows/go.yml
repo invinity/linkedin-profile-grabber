@@ -43,7 +43,7 @@ jobs:
         go get github.com/jstemmer/go-junit-report
         go install github.com/Thatooine/go-test-html-report
         go install github.com/jstemmer/go-junit-report
-        go test -v -cover -coverprofile coverage.out -json ./... | go-junit-repor
+        go test -v -cover -coverprofile coverage.out -json ./... | go-junit-report
 
     - id: 'glcoud-auth'
       name: Setup GCloud Auth

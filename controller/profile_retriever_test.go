@@ -1,8 +1,6 @@
 package controller
 
 import (
-	"bytes"
-	"encoding/gob"
 	"errors"
 	"testing"
 	"time"
@@ -12,33 +10,6 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
-
-type DummyCache struct {
-	buf bytes.Buffer
-}
-
-func (c *DummyCache) Get(key string, value any) error {
-	return gob.NewDecoder(&c.buf).Decode(value)
-}
-
-func (c *DummyCache) Put(key string, value any) error {
-	c.buf.Reset()
-	gob.NewEncoder(&c.buf).Encode(value)
-	return nil
-}
-
-func (c *DummyCache) Remove(key string) error {
-	c.buf.Reset()
-	return nil
-}
-
-func (c *DummyCache) Close() error {
-	return nil
-}
-
-func NewTestCache() cache.Cache {
-	return &DummyCache{}
-}
 
 type DummyProfileRetriever struct {
 	profile *linkedin.LinkedInProfile
@@ -67,7 +38,7 @@ var _ = Describe("Using the profile retrieval", Ordered, func() {
 	Describe("normal function", func() {
 		Context("cached copy is present but stale and linked in call fails", func() {
 			cachedProfile := linkedin.LinkedInProfile{}
-			testCache := NewTestCache()
+			testCache := cache.NewMemoryCache()
 			testCache.Put("thing", cachedProfile)
 			testRetriever := NewTestRetriever(nil, errors.New("unable to call linked in"))
 			underTest := NewCacheHandlingRetriever(testCache, testRetriever)
@@ -83,7 +54,7 @@ var _ = Describe("Using the profile retrieval", Ordered, func() {
 
 		Context("cached copy is not present and linked in call succeeds", func() {
 			freshProfile := linkedin.LinkedInProfile{}
-			testCache := NewTestCache()
+			testCache := cache.NewMemoryCache()
 			testRetriever := NewTestRetriever(&freshProfile, nil)
 			underTest := NewCacheHandlingRetriever(testCache, testRetriever)
 			retrievedProfile, err := underTest.Get()
@@ -99,7 +70,7 @@ var _ = Describe("Using the profile retrieval", Ordered, func() {
 		Context("cached copy is present but stale and linked in call succeeds", func() {
 			cachedProfile := linkedin.LinkedInProfile{GeneratedAt: time.Now().Add(-6 * time.Hour)}
 			freshProfile := linkedin.LinkedInProfile{GeneratedAt: time.Now()}
-			testCache := NewTestCache()
+			testCache := cache.NewMemoryCache()
 			testCache.Put("thing", cachedProfile)
 			testRetriever := NewTestRetriever(&freshProfile, nil)
 			underTest := NewCacheHandlingRetriever(testCache, testRetriever)
@@ -114,7 +85,7 @@ var _ = Describe("Using the profile retrieval", Ordered, func() {
 		})
 
 		Context("cached copy is not present and linkedin call fails", func() {
-			testCache := NewTestCache()
+			testCache := cache.NewMemoryCache()
 			testRetriever := NewTestRetriever(nil, errors.New("unable to call linked in"))
 			underTest := NewCacheHandlingRetriever(testCache, testRetriever)
 			retrievedProfile, err := underTest.Get()

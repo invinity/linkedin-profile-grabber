@@ -35,7 +35,15 @@ jobs:
       run: go build -v ./...
 
     - name: Test
-      run: go test -v ./...
+      env:
+        CGO_ENABLED: 0
+        GOOS: linux
+      run: |
+        go get github.com/Thatooine/go-test-html-report
+        go get github.com/jstemmer/go-junit-report
+        go install github.com/Thatooine/go-test-html-report
+        go install github.com/jstemmer/go-junit-report
+        go test -v -cover -coverprofile coverage.out -json ./... | go-junit-repor
 
     - id: 'glcoud-auth'
       name: Setup GCloud Auth

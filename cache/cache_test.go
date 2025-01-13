@@ -1,8 +1,6 @@
 package cache
 
 import (
-	"context"
-	"log"
 	"testing"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -15,16 +13,10 @@ func TestCache(t *testing.T) {
 }
 
 var _ = Describe("Using the LinkedIn profile retrieval", Ordered, func() {
-	var ctx context.Context
 	var underTest Cache
 
 	BeforeAll(func() {
-		ctx = context.Background()
-		var err error
-		underTest, err = NewGoogleStorageCache(&ctx, "linkedin-profile-grabber")
-		if err != nil {
-			log.Panic(err)
-		}
+		underTest = NewMemoryCache()
 	})
 
 	Describe("normal function", func() {

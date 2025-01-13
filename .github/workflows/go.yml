@@ -39,11 +39,16 @@ jobs:
         CGO_ENABLED: 0
         GOOS: linux
       run: |
-        go get github.com/Thatooine/go-test-html-report
         go get github.com/jstemmer/go-junit-report
-        go install github.com/Thatooine/go-test-html-report
         go install github.com/jstemmer/go-junit-report
-        go test -v -cover -coverprofile coverage.out -json ./... | go-junit-report
+        go test -v -cover -coverprofile coverage.out ./... | go-junit-report -set-exit-code > junit-results.xml
+
+    - name: Test Summary
+      uses: test-summary/action@v1
+      if: always()
+      with:
+        paths: |
+          junit-results.xml
 
     - id: 'glcoud-auth'
       name: Setup GCloud Auth
